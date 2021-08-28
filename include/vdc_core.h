@@ -82,6 +82,8 @@ void VDC_ScrollCopy_core();
 void SetLoadSaveBank_core();
 void POKEB_core();
 void PEEKB_core();
+void BankMemCopy_core();
+void BankMemSet_core();
 
 // Function Prototypes
 unsigned char VDC_ReadRegister(unsigned char registeraddress);
@@ -115,5 +117,7 @@ void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned 
 void SetLoadSaveBank(unsigned char bank);
 void POKEB(unsigned int address, unsigned char bank, unsigned char value);
 unsigned char PEEKB(unsigned int address, unsigned char bank);
+void BankMemCopy(unsigned int source, unsigned char sourcebank, unsigned int dest, unsigned char destbank, unsigned int length);
+void BankMemSet(unsigned int source, unsigned char sourcebank, unsigned char value, unsigned int length);
 
 #endif

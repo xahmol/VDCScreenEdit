@@ -39,6 +39,8 @@
 	.export		_SetLoadSaveBank_core
 	.export		_POKEB_core
 	.export		_PEEKB_core
+	.export		_BankMemCopy_core
+	.export		_BankMemSet_core
     .export		_VDC_regadd
 	.export		_VDC_regval
 	.export		_VDC_addrh
@@ -87,6 +89,10 @@ _VDC_tmp4:
 ZPtmp1:
 	.res	1
 ZPtmp2:
+	.res	1
+ZPtmp3:
+	.res	1
+ZPtmp4:
 	.res	1
 MemConfTmp:
 	.res	1
@@ -1077,6 +1083,164 @@ _PEEKB_core:
 	sta $fc								; Restore value
 
 	; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
+    rts
+
+; ------------------------------------------------------------------------------------------
+_BankMemCopy_core:
+; Function to copy memory to another place in memory which user defined banks
+; Input:	VDC_addrh = high byte of source address
+;			VDC_addrl = low byte of source address
+;			VDC_desth = high byte of VDC destination address
+;			VDC_destl = low byte of VDC destination address
+;			VDC_tmp1 = number of 256 byte pages to copy
+;			VDC_tmp2 = length in last page to copy
+;			VDC_tmp3 = MMU config of source
+;			VDC_tmp4 = MMU config of destination
+; ------------------------------------------------------------------------------------------
+
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
+	lda $fd								; Obtain present value at $fc
+	sta ZPtmp3							; Store to be restored later
+	lda $fe								; Obtain present value at $fc
+	sta ZPtmp4							; Store to be restored later
+
+	; Set source address pointer in zero-page
+	lda _VDC_addrl						; Obtain low byte in A
+	sta $fb								; Store low byte in pointer
+	lda _VDC_addrh						; Obtain high byte in A
+	sta $fc								; Store high byte in pointer
+
+	; Set destination address pointer in zero-page
+	lda _VDC_destl						; Obtain low byte in A
+	sta $fd								; Store low byte in pointer
+	lda _VDC_desth						; Obtain high byte in A
+	sta $fe								; Store high byte in pointer
+
+	; Start of copy loop
+	ldy #$00    						; Set Y as counter on 0
+	
+copyloopbmc:							; Start of copy loop
+	; Set MMU configuration for source
+	lda _VDC_tmp3						; Obtain selected MMU config for source
+	sta $ff00							; Store selected MMU config for source
+
+	; Read value at source address
+	lda ($fb),y							; Load source data
+
+	; Set MMU configuration for destination
+	ldx _VDC_tmp4						; Obtain selected MMU config for source
+	stx $ff00							; Store selected MMU config for source
+
+	; Store value at destination address
+	sta ($fd),y 						; Store data at destination
+
+	; Increase addresses
+	inc $fb								; Increment low byte of source address
+	bne nextbmc1						; If not yet zero, branch to next label
+	inc $fc								; Increment high byte of source address
+nextbmc1:								; Next label
+	inc $fd								; Increment low byte of source address
+	bne nextbmc2						; If not yet zero, branch to next label
+	inc $fe								; Increment high byte of source address
+nextbmc2:								; Next label
+
+	; Decrease counters
+	dec _VDC_tmp2						; Decrease low byte of length
+	lda _VDC_tmp2						; Load low byte of length to A
+	cmp #$ff							; Check if below zero
+	bne copyloopbmc						; Continue loop if not yet below zero
+	dec _VDC_tmp1						; Decrease high byte of length
+	lda _VDC_tmp1						; Load high byte of length to A
+	cmp #$ff							; Check if below zero
+	bne copyloopbmc						; Continue loop if not yet below zero
+
+; Restore ZP addresses
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+	lda ZPtmp3							; Obtain stored value of $fd
+	sta $fd								; Restore value
+	lda ZPtmp4							; Obtain stored value of $fe
+	sta $fe								; Restore value
+
+; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
+    rts
+
+; ------------------------------------------------------------------------------------------
+_BankMemSet_core:
+; Function to set memory in given bank to specific value
+; Input:	VDC_addrh = high byte of source address
+;			VDC_addrl = low byte of source address
+;			VDC_value = value to set at all memory positions
+;			VDC_tmp1 = number of 256 byte pages to copy
+;			VDC_tmp2 = length in last page to copy
+;			VDC_tmp3 = MMU config of source
+; ------------------------------------------------------------------------------------------
+
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+
+	; Set MMU configuration for source
+	lda _VDC_tmp3						; Obtain selected MMU config for source
+	sta $ff00							; Store selected MMU config for source
+
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
+
+	; Set source address pointer in zero-page
+	lda _VDC_addrl						; Obtain low byte in A
+	sta $fb								; Store low byte in pointer
+	lda _VDC_addrh						; Obtain high byte in A
+	sta $fc								; Store high byte in pointer
+
+	; Start of copy loop
+	ldy #$00    						; Set Y as counter on 0
+	
+copyloopbms:							; Start of copy loop
+	; Store value at address
+	lda _VDC_value						; Load value to set in A
+	sta ($fb),y							; Load source data
+
+	; Increase addresses
+	inc $fb								; Increment low byte of source address
+	bne nextbms1						; If not yet zero, branch to next label
+	inc $fc								; Increment high byte of source address
+nextbms1:								; Next label
+
+	; Decrease counters
+	dec _VDC_tmp2						; Decrease low byte of length
+	lda _VDC_tmp2						; Load low byte of length to A
+	cmp #$ff							; Check if below zero
+	bne copyloopbms						; Continue loop if not yet below zero
+	dec _VDC_tmp1						; Decrease high byte of length
+	lda _VDC_tmp1						; Load high byte of length to A
+	cmp #$ff							; Check if below zero
+	bne copyloopbms						; Continue loop if not yet below zero
+
+; Restore ZP addresses
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+
+; Restore memory configuration
 	lda MemConfTmp						; Obtain saved memory config
 	sta $ff00							; Restore memory config
     rts

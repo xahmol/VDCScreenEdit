@@ -634,6 +634,9 @@ void SetLoadSaveBank(unsigned char bank)
 
 void POKEB(unsigned int address, unsigned char bank, unsigned char value)
 {
+	// Function to poke to a memory position in specified bank
+	// Input: address, bank and value to poke
+
 	VDC_addrh = (address>>8) & 0xff;					// Obtain high byte of address
 	VDC_addrl = address & 0xff;							// Obtain low byte of address
 	VDC_tmp3 = (bank==0)? MMU_BANK0:MMU_BANK1;			// Set proper MMU config based on bank 0 or 1
@@ -643,9 +646,49 @@ void POKEB(unsigned int address, unsigned char bank, unsigned char value)
 
 unsigned char PEEKB(unsigned int address, unsigned char bank)
 {
+	// Function to peek a memory position in specified bank
+	// Input: address, bank
+	// Output: peekd value
+
 	VDC_addrh = (address>>8) & 0xff;					// Obtain high byte of address
 	VDC_addrl = address & 0xff;							// Obtain low byte of address
 	VDC_tmp3 = (bank==0)? MMU_BANK0:MMU_BANK1;			// Set proper MMU config based on bank 0 or 1
 	POKEB_core();
 	return VDC_value;
+}
+
+void BankMemCopy(unsigned int source, unsigned char sourcebank, unsigned int dest, unsigned char destbank, unsigned int length)
+{
+	// Function to copy memory to another place in memory with user defined banks
+	// Input: Source address and bank, destination address and bank, length in bytes to copy
+
+	length--;
+
+	VDC_addrh = (source>>8) & 0xff;						// Obtain high byte of source address
+	VDC_addrl = source & 0xff;							// Obtain low byte of source address
+	VDC_desth = (dest>>8) & 0xff;						// Obtain high byte of destination address
+	VDC_destl = dest & 0xff;							// Obtain low byte of destination address
+	VDC_tmp1 = ((length>>8) & 0xff);					// Obtain number of 256 byte pages to copy
+	VDC_tmp2 = length & 0xff;							// Obtain length in last page to copy
+	VDC_tmp3 = (sourcebank==0)? MMU_BANK0:MMU_BANK1;	// Set proper MMU config based on bank 0 or 1
+	VDC_tmp4 = (destbank==0)? MMU_BANK0:MMU_BANK1;		// Set proper MMU config based on bank 0 or 1
+
+	BankMemCopy_core();
+}
+
+void BankMemSet(unsigned int source, unsigned char sourcebank, unsigned char value, unsigned int length)
+{
+	// Function to set memory in user defined banks to given value
+	// Input: Source address and bank, value to set, length in bytes
+
+	length--;
+
+	VDC_addrh = (source>>8) & 0xff;						// Obtain high byte of source address
+	VDC_addrl = source & 0xff;							// Obtain low byte of source address
+	VDC_value = value;									// Onbtain value to set
+	VDC_tmp1 = ((length>>8) & 0xff);					// Obtain number of 256 byte pages to copy
+	VDC_tmp2 = length & 0xff;							// Obtain length in last page to copy
+	VDC_tmp3 = (sourcebank==0)? MMU_BANK0:MMU_BANK1;	// Set proper MMU config based on bank 0 or 1
+
+	BankMemSet_core();
 }

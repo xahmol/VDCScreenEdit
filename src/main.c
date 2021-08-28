@@ -60,26 +60,44 @@ void main()
 {
     unsigned char x = 5;
     unsigned char y = 5;
+    unsigned int screenwidth = 160;
+    unsigned int screenheigth = 50;
     unsigned char key;
     unsigned char direction;
+    unsigned char lines, sets, chars;
 
     VDC_Init();
+    gotoxy(0,0);
+    printf("Bankmemset.\n");
+    BankMemSet(SCREENMAPBASE,1,102,screenwidth*screenheigth);
+    BankMemSet(SCREENMAPBASE+(screenwidth*screenheigth)+48,1,13,screenwidth*screenheigth);
 
-    POKEB(WINDOWBASEADDRESS,1,128);
-    if(PEEKB(WINDOWBASEADDRESS,1)==128)
+    cgetc();
+    printf("Poking.\n");
+
+    for(lines=0;lines<5;lines++)
     {
-        printf("Poke/peek test OK.");
-    }
-    else
-    {
-        printf("Error.");
+        for(sets=0;sets<16;sets++)
+        {
+            for(chars=0;chars<10;chars++)
+            {
+                POKEB(SCREENMAPBASE + (lines*10*screenwidth) + (sets*10) + chars,1,chars+48);
+                POKEB(SCREENMAPBASE + (screenwidth*screenheigth) + 48 + (lines*10*screenwidth) + (sets*10) + chars,1,chars+1);
+            }
+        }
     }
 
     cgetc();
+    printf("Copy viewport.");
+    VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheigth,0,0,0,0,80,25);
 
-    VDC_LoadScreen("ludo.mscr",SCREENMAPBASE,1);
+    cgetc();
+    cputsxy(0,2,"BankMemCopy.");
+    BankMemCopy(SCREENMAPBASE,1,SCREENMAPBASE+5*screenwidth,1,5*screenwidth);
+    BankMemCopy(SCREENMAPBASE+(screenwidth*screenheigth)+48,1,SCREENMAPBASE+(screenwidth*screenheigth)+48+5*screenwidth,1,5*screenwidth);
+    VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheigth,0,0,0,0,80,25);
 
-    VDC_CopyMemToVDC(0,SCREENMAPBASE,1,4096);
+    cgetc();
 
     do
     {
@@ -96,7 +114,7 @@ void main()
             break;
             
         case CH_CURS_DOWN:
-            if(y<10) { y++; direction = SCROLL_UP; }
+            if(y<screenheigth-15) { y++; direction = SCROLL_UP; }
             break;
 
         case CH_CURS_LEFT:
@@ -104,7 +122,7 @@ void main()
             break;
             
         case CH_CURS_RIGHT:
-            if(x<20) { x++; direction = SCROLL_LEFT; }
+            if(x<screenwidth-60) { x++; direction = SCROLL_LEFT; }
             break;
 
         default:
@@ -112,9 +130,9 @@ void main()
         }
 
         gotoxy(0,2);
-        cprintf("X: %2i Y: %2i",x,y);
+        cprintf("X: %3i Y: %3i  ",x,y);
 
-        if(direction) { VDC_ScrollCopy(SCREENMAPBASE,1,80,25,x,y,5,5,60,15,direction); }
+        if(direction) { VDC_ScrollCopy(SCREENMAPBASE,1,screenwidth,screenheigth,x,y,5,5,60,15,direction); }
 
     } while (key != CH_ESC);
 
