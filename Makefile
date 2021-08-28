@@ -5,7 +5,7 @@
 
 SOURCESMAIN = src/main.c src/vdc_core.c
 SOURCESLIB = src/vdc_core_assembly.s
-OBJECTS = ludo.maco.prg
+OBJECTS = vdcse.maco.prg ludo.mscr.prg
 
 ZIP = vdcscreenedit-$(shell date "+%Y%m%d-%H%M").zip
 D64 = vdcse.d64

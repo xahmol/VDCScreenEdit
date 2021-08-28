@@ -43,6 +43,12 @@
 #define MMU_BANK0               0x3e  // Bank 0 with full RAM apart from I/O area
 #define MMU_BANK1               0x7e  // Bank 1 with full RAM apart from I/O area
 
+// Defines for scroll directions
+#define SCROLL_LEFT             0x01
+#define SCROLL_RIGHT            0x02
+#define SCROLL_DOWN             0x04
+#define SCROLL_UP               0x08
+
 // Variables in core Functions
 extern unsigned char VDC_regadd;
 extern unsigned char VDC_regval;
@@ -50,6 +56,8 @@ extern unsigned char VDC_addrh;
 extern unsigned char VDC_addrl;
 extern unsigned char VDC_desth;
 extern unsigned char VDC_destl;
+extern unsigned char VDC_strideh;
+extern unsigned char VDC_stridel;
 extern unsigned char VDC_value;
 extern unsigned char VDC_tmp1;
 extern unsigned char VDC_tmp2;
@@ -68,7 +76,12 @@ void VDC_CopyMemToVDC_core();
 void VDC_CopyVDCToMem_core();
 void VDC_RedefineCharset_core();
 void VDC_FillArea_core();
+void VDC_CopyViewPortToVDC_core();
+void VDC_ScrollCopy_core();
+
 void SetLoadSaveBank_core();
+void POKEB_core();
+void PEEKB_core();
 
 // Function Prototypes
 unsigned char VDC_ReadRegister(unsigned char registeraddress);
@@ -91,11 +104,16 @@ void VDC_BackColor(unsigned char color);
 unsigned char VDC_CursorAt(unsigned char row, unsigned char col);
 unsigned char VDC_PrintAt(unsigned char row, unsigned char col, char *text, unsigned char attribute);
 void VDC_LoadCharset(char* filename, unsigned int source, unsigned char sourcebank, unsigned char stdoralt);
-void VDC_LoadScreen(char* filename, unsigned int source, unsigned char sourcebank, unsigned char show);
+unsigned int VDC_LoadScreen(char* filename, unsigned int source, unsigned char sourcebank);
 unsigned char VDC_SaveScreen(char* filename, unsigned int bufferaddress, unsigned char bufferbank);
 unsigned char VDC_Attribute(unsigned char textcolor, unsigned char blink, unsigned char underline, unsigned char reverse, unsigned char alternate);
 void VDC_Plot(unsigned char row, unsigned char col, unsigned char screencode, unsigned char attribute);
 void VDC_PlotString(unsigned char row, unsigned char col, char* plotstring, unsigned char length, unsigned char attribute);
+void VDC_CopyViewPortToVDC(unsigned int sourcebase, unsigned char sourcebank, unsigned int sourcewidth, unsigned int sourceheight, unsigned int sourcexoffset, unsigned int sourceyoffset, unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight );
+void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned int sourcewidth, unsigned int sourceheight, unsigned int sourcexoffset, unsigned int sourceyoffset, unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight, unsigned char direction);
+
 void SetLoadSaveBank(unsigned char bank);
+void POKEB(unsigned int address, unsigned char bank, unsigned char value);
+unsigned char PEEKB(unsigned int address, unsigned char bank);
 
 #endif

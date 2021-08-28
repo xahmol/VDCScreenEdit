@@ -10,6 +10,7 @@
 #include <device.h>
 #include <accelerator.h>
 #include <c128.h>
+#include "vdc_core.h"
 #include "defines.h"
 
 //Window data
@@ -55,263 +56,67 @@ char pulldownmenutitles[8][5][16] = {
      "Slot 4: Empty  "}
 };
 
-/* Functions for windowing and menu system */
-
-void windowsave(unsigned char ypos, unsigned char height)
+void main()
 {
-    /* Function to save a window
-       Input:
-       - ypos: startline of window
-       - height: height of window    */
-    
-    Window[windownumber].address = windowaddress;
-    Window[windownumber].ypos = ypos;
-    Window[windownumber].height = height;
-
-    // Copy characters
-    VDC_CopyVDCToMem(ypos*80,windowaddress,1,height*80);
-    windowaddress += height*80;
-
-    // Copy attributes
-    VDC_CopyVDCToMem(0x0800+ypos*80,windowaddress,1,height*80);
-    windowaddress += height*80;
-
-    windownumber++;
-}
-
-void windowrestore()
-{
-    /* Function to restore a window */
-    windowaddress = Window[--windownumber].address;
-
-    // Restore characters
-    VDC_CopyMemToVDC(Window[windownumber].ypos*80,windowaddress,1,Window[windownumber].height*80);
-
-    // Restore attributes
-    VDC_CopyMemToVDC(0x0800+(Window[windownumber].ypos*80),windowaddress+(Window[windownumber].height*80),1,Window[windownumber].height*80);
-}
-
-void menumakeborder(unsigned char xpos, unsigned char ypos, unsigned char height, unsigned char width)
-{
-    /* Function to make menu border
-       Input:
-       - xpos: x-coordinate of left upper corner
-       - ypos: y-coordinate of right upper corner
-       - height: number of rows in window
-       - width: window width in characters        */
- 
-    windowsave(ypos, height+4);
-
-    VDC_FillArea(ypos+1,xpos+1,C_SPACE,width,height,VDC_LYELLOW);
-    VDC_Plot(ypos,xpos,C_LOWRIGHT,VDC_LRED);
-    VDC_HChar(ypos,xpos+1,C_LOWLINE,width,VDC_LRED);
-    VDC_Plot(ypos,xpos+width+1,C_LOWLEFT,VDC_LRED);
-    VDC_VChar(ypos+1,xpos,C_RIGHTLINE,height,VDC_LRED);
-    VDC_VChar(ypos+1,xpos+width+1,C_LEFTLINE,height,VDC_LRED);
-    VDC_Plot(ypos+height+1,xpos,C_UPRIGHT,VDC_LRED);
-    VDC_HChar(ypos+height+1,xpos+1,C_UPLINE,width,VDC_LRED);
-    VDC_Plot(ypos+height+1,xpos+width+1,C_UPLEFT,VDC_LRED);
-}
-
-void menuplacebar()
-{
-    /* Function to print menu bar */
-
-    unsigned char x;
-
-    for(x=0;x<menubaroptions;x++)
-    {
-        VDC_PrintAt(1,menubarcoords[x],menubartitles[x],VDC_DGREEN+VDC_A_REVERSE);
-    }
-}
-
-unsigned char menupulldown(unsigned char xpos, unsigned char ypos, unsigned char menunumber)
-{
-    /* Function for pull down menu
-       Input:
-       - xpos = x-coordinate of upper left corner
-       - ypos = y-coordinate of upper left corner
-       - menunumber = 
-         number of the menu as defined in pulldownmenuoptions array */
-
-    unsigned char x;
-    char validkeys[6];
+    unsigned char x = 5;
+    unsigned char y = 5;
     unsigned char key;
-    unsigned char exit = 0;
-    unsigned char menuchoice = 1;
+    unsigned char direction;
 
-    windowsave(ypos, pulldownmenuoptions[menunumber-1]+4);
-    if(menunumber>menubaroptions)
-    {
-        VDC_Plot(ypos,xpos,C_LOWRIGHT,VDC_LRED);
-        VDC_HChar(ypos,xpos+1,C_LOWLINE,strlen(pulldownmenutitles[menunumber-1][0])+2,VDC_LRED);
-        VDC_Plot(ypos,xpos+strlen(pulldownmenutitles[menunumber-1][0])+3,C_LOWLEFT,VDC_LRED);
-    }
-    for(x=0;x<pulldownmenuoptions[menunumber-1];x++)
-    {
-        VDC_Plot(ypos+x+1,xpos,C_RIGHTLINE,VDC_LRED);
-        VDC_Plot(ypos+x+1,xpos+1,C_SPACE,VDC_LCYAN+VDC_A_REVERSE);
-        VDC_PrintAt(ypos+x+1,xpos+2,pulldownmenutitles[menunumber-1][x],VDC_LCYAN+VDC_A_REVERSE);
-        VDC_Plot(ypos+x+1,xpos+strlen(pulldownmenutitles[menunumber-1][x])+2,C_SPACE,VDC_LCYAN+VDC_A_REVERSE);
-        VDC_Plot(ypos+x+1,xpos+strlen(pulldownmenutitles[menunumber-1][x])+3,C_LEFTLINE,VDC_LRED);
-    }
-    VDC_Plot(ypos+pulldownmenuoptions[menunumber-1]+1,xpos,C_UPRIGHT,VDC_LRED);
-    VDC_HChar(ypos+pulldownmenuoptions[menunumber-1]+1,xpos+1,C_UPLINE,strlen(pulldownmenutitles[menunumber-1][0])+2,VDC_LRED);
-    VDC_Plot(ypos+pulldownmenuoptions[menunumber-1]+1,xpos+strlen(pulldownmenutitles[menunumber-1][0])+3,C_UPLEFT,VDC_LRED);
+    VDC_Init();
 
-    strcpy(validkeys, updownenter);
-    if(menunumber<=menubaroptions)
+    POKEB(WINDOWBASEADDRESS,1,128);
+    if(PEEKB(WINDOWBASEADDRESS,1)==128)
     {
-        strcat(validkeys, leftright);
+        printf("Poke/peek test OK.");
     }
-    
+    else
+    {
+        printf("Error.");
+    }
+
+    cgetc();
+
+    VDC_LoadScreen("ludo.mscr",SCREENMAPBASE,1);
+
+    VDC_CopyMemToVDC(0,SCREENMAPBASE,1,4096);
+
     do
     {
-        VDC_Plot(ypos+menuchoice,xpos+1,C_SPACE,VDC_LYELLOW+VDC_A_REVERSE);
-        VDC_PrintAt(ypos+menuchoice,xpos+2,pulldownmenutitles[menunumber-1][menuchoice-1],VDC_LYELLOW+VDC_A_REVERSE);
-        VDC_Plot(ypos+menuchoice,xpos+strlen(pulldownmenutitles[menunumber-1][menuchoice-1])+2,C_SPACE,VDC_LYELLOW+VDC_A_REVERSE);
-
-        key = getkey(validkeys,joyinterface);
+        direction = 0;
+        do
+        {
+            key = cgetc();
+        } while (key != CH_CURS_UP && key != CH_CURS_DOWN && key != CH_CURS_LEFT && key != CH_CURS_RIGHT && key != CH_ESC);
+        
         switch (key)
         {
-        case C_ENTER:
-            exit = 1;
+        case CH_CURS_UP:
+            if(y>0) { y--; direction = SCROLL_DOWN; }
             break;
-        
-        case C_LEFT:
-            exit = 1;
-            menuchoice = 18;
-            break;
-        
-        case C_RIGHT:
-            exit = 1;
-            menuchoice = 19;
+            
+        case CH_CURS_DOWN:
+            if(y<10) { y++; direction = SCROLL_UP; }
             break;
 
-        case C_DOWN:
-        case C_UP:
-            VDC_Plot(ypos+menuchoice,xpos+1,C_SPACE,VDC_LCYAN+VDC_A_REVERSE);
-            VDC_PrintAt(ypos+menuchoice,xpos+2,pulldownmenutitles[menunumber-1][menuchoice-1],VDC_LCYAN+VDC_A_REVERSE);
-            VDC_Plot(ypos+menuchoice,xpos+strlen(pulldownmenutitles[menunumber-1][menuchoice-1])+2,C_SPACE,VDC_LCYAN+VDC_A_REVERSE);
-            if(key==C_UP)
-            {
-                menuchoice--;
-                if(menuchoice<1)
-                {
-                    menuchoice=pulldownmenuoptions[menunumber-1];
-                }
-            }
-            else
-            {
-                menuchoice++;
-                if(menuchoice>pulldownmenuoptions[menunumber-1])
-                {
-                    menuchoice = 1;
-                }
-            }
+        case CH_CURS_LEFT:
+            if(x>0) { x--; direction = SCROLL_RIGHT; }
+            break;
+            
+        case CH_CURS_RIGHT:
+            if(x<20) { x++; direction = SCROLL_LEFT; }
             break;
 
         default:
             break;
         }
-    } while (exit==0);
-    windowrestore();    
-    return menuchoice;
-}
 
-unsigned char menumain()
-{
-    /* Function for main menu selection */
+        gotoxy(0,2);
+        cprintf("X: %2i Y: %2i",x,y);
 
-    unsigned char menubarchoice = 1;
-    unsigned char menuoptionchoice = 0;
-    unsigned char key;
-    char validkeys[4] = {C_LEFT,C_RIGHT,C_ENTER,0};
-    unsigned char xpos;
+        if(direction) { VDC_ScrollCopy(SCREENMAPBASE,1,80,25,x,y,5,5,60,15,direction); }
 
-    do
-    {
-        do
-        {
-            VDC_Plot(1,menubarcoords[menubarchoice-1]-1,C_SPACE,VDC_WHITE+VDC_A_REVERSE+VDC_A_ALTCHAR);
-            VDC_PrintAt(1,menubarcoords[menubarchoice-1],menubartitles[menubarchoice-1],VDC_WHITE+VDC_A_REVERSE+VDC_A_ALTCHAR);
-            VDC_Plot(1,menubarcoords[menubarchoice-1]+strlen(menubartitles[menubarchoice-1]),C_SPACE,VDC_WHITE+VDC_A_REVERSE+VDC_A_ALTCHAR);
+    } while (key != CH_ESC);
 
-            key = getkey(validkeys,joyinterface);
-
-            VDC_Plot(1,menubarcoords[menubarchoice-1]-1,C_SPACE,VDC_DGREEN+VDC_A_REVERSE+VDC_A_ALTCHAR);
-            VDC_PrintAt(1,menubarcoords[menubarchoice-1],menubartitles[menubarchoice-1],VDC_DGREEN+VDC_A_REVERSE+VDC_A_ALTCHAR);
-            VDC_Plot(1,menubarcoords[menubarchoice-1]+strlen(menubartitles[menubarchoice-1]),C_SPACE,VDC_DGREEN+VDC_A_REVERSE+VDC_A_ALTCHAR);
-            
-            if(key==C_LEFT)
-            {
-                menubarchoice--;
-                if(menubarchoice<1)
-                {
-                    menubarchoice = menubaroptions;
-                }
-            }
-            else if (key==C_RIGHT)
-            {
-                menubarchoice++;
-                if(menubarchoice>menubaroptions)
-                {
-                    menubarchoice = 1;
-                }
-            }
-        } while (key!=C_ENTER);
-        xpos=menubarcoords[menubarchoice-1]-1;
-        if(xpos+strlen(pulldownmenutitles[menubarchoice-1][0])>38)
-        {
-            xpos=menubarcoords[menubarchoice-1]+strlen(menubartitles[menubarchoice-1])-strlen(pulldownmenutitles[menubarchoice-1][0]);
-        }
-        menuoptionchoice = menupulldown(xpos,1,menubarchoice);
-        if(menuoptionchoice==18)
-        {
-            menuoptionchoice=0;
-            menubarchoice--;
-            if(menubarchoice<1)
-            {
-                    menubarchoice = menubaroptions;
-            }
-        }
-        if(menuoptionchoice==19)
-        {
-            menuoptionchoice=0;
-            menubarchoice++;
-            if(menubarchoice>menubaroptions)
-            {
-                menubarchoice = 1;
-            }
-        }
-    } while (menuoptionchoice==0);
-    return menubarchoice*10+menuoptionchoice;    
-}
-
-unsigned char areyousure()
-{
-    /* Pull down menu to verify if player is sure */
-    unsigned char choice;
-
-    menumakeborder(8,8,6,30);
-    cputsxy(10,10,"Are you sure?");
-    choice = menupulldown(25,11,5);
-    windowrestore();
-    return choice;
-}
-
-void fileerrormessage(unsigned char error)
-{
-    /* Show message for file error encountered */
-
-    menumakeborder(8,8,6,30);
-    cputsxy(10,10,"File error!");
-    if(error<255)
-    {
-        gotoxy(10,12);
-        cprintf("Error nr.: %2X",error);
-    }
-    cputsxy(10,12,"Press key.");
-    getkey("",1);
-    windowrestore();    
+    VDC_Exit();
 }

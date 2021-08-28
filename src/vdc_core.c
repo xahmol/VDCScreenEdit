@@ -95,7 +95,6 @@ void VDC_MemCopy(unsigned int sourceaddr, unsigned int destaddr, unsigned int le
 	VDC_destl = destaddr & 0xff;			// Obtain low byte of destination address
 	VDC_tmp1 = ((length>>8) & 0xff) + 1;	// Obtain number of 256 byte pages to copy
 	VDC_tmp2 = length & 0xff;				// Obtain length in last page to copy
-	VDC_value = VDC_ReadRegister(24) | 128;	// Prepae value for copy bit 7 enabled of register 24
 
 	VDC_MemCopy_core();
 }
@@ -384,12 +383,12 @@ void VDC_LoadCharset(char* filename, unsigned int source, unsigned char sourceba
 	SetLoadSaveBank(0);
 }
 
-void VDC_LoadScreen(char* filename, unsigned int source, unsigned char sourcebank, unsigned char show)
+unsigned int VDC_LoadScreen(char* filename, unsigned int source, unsigned char sourcebank)
 {
-	// Function to load a screen from disk and store to memory, if wanted also copy to VDC
-	// Input: filename, memory address, memory bank, flag if copy to VDC is wanted (0=no, 1=yes)
+	// Function to load a screen from disk and store to memory
+	// Input: filename, memory address, memory bank
 
-	unsigned int length;
+	unsigned int lastreadaddress;
 
 	// Set device ID
 	cbm_k_setlfs(0, getcurrentdevice(), 0);
@@ -401,16 +400,13 @@ void VDC_LoadScreen(char* filename, unsigned int source, unsigned char sourceban
 	SetLoadSaveBank(sourcebank);
 	
 	// Load from file to memory
-	length = cbm_k_load(0,source);
-
-	// Copy screen to VDC
-	if(length>source  && show ==1)
-	{
-		VDC_CopyMemToVDC(0,source,sourcebank, length-source+1);
-	}
+	lastreadaddress = cbm_k_load(0,source);
 
 	// Restore I/O bank to 0
 	SetLoadSaveBank(0);
+
+	// Return last read address (if not higher than start address error has occurred)
+	return lastreadaddress;
 }
 
 unsigned char VDC_SaveScreen(char* filename, unsigned int bufferaddress, unsigned char bufferbank)
@@ -473,6 +469,160 @@ void VDC_PlotString(unsigned char row, unsigned char col, char* plotstring, unsi
 	}
 }
 
+void VDC_CopyViewPortToVDC(unsigned int sourcebase, unsigned char sourcebank, unsigned int sourcewidth, unsigned int sourceheight, unsigned int sourcexoffset, unsigned int sourceyoffset, unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight )
+{
+	// Function to copy a vieuwport on the source screen map to the VDC
+	// Input:
+	// - Source:	sourcebase			= source base address in memory
+	//				sourcebak			= memory bank of source (0 or 1)
+	//				sourcewidth			= number of characters per line in source screen map
+	//				sourceheight		= number of lines in source screen map
+	//				sourcexoffset		= horizontal offset on source screen map to start upper left corner of viewpoint
+	//				sourceyoffset		= vertical offset on source screen map to start upper left corner of viewpoint
+	// - Viewport:	xcoord				= x coordinate of viewport upper left corner
+	//				ycoord				= y coordinate of viewport upper left corner
+	//				viewwidth			= width of viewport in number of characters
+	//				viewheight			= heighh of viewport in number of lines
+
+	// Charachters
+	unsigned int stride = sourcewidth - viewwidth;
+	unsigned int vdcbase = VDCBASETEXT + (ycoord * 80) + xcoord;
+
+	sourcebase += (sourceyoffset * sourcewidth ) + sourcexoffset;
+
+	VDC_addrh = (sourcebase>>8) & 0xff;					// Obtain high byte of source address
+	VDC_addrl = sourcebase & 0xff;						// Obtain low byte of source address
+	VDC_desth = (vdcbase>>8) & 0xff;					// Obtain high byte of destination address
+	VDC_destl = vdcbase & 0xff;							// Obtain low byte of destination address
+	VDC_strideh = (stride>>8) & 0xff;					// Obtain high byte of stride
+	VDC_stridel = stride & 0xff;						// Obatin low byte of stride
+	VDC_tmp1 = --viewheight;							// Obtain number of lines to copy
+	VDC_tmp2 = --viewwidth;								// Obtain length of lines to copy
+	VDC_tmp3 = (sourcebank==0)? MMU_BANK0:MMU_BANK1;	// Set proper MMU config based on bank 0 or 1
+
+	VDC_CopyViewPortToVDC_core();
+
+	// Attributes
+	sourcebase += (sourceheight * sourcewidth) + 48;
+	vdcbase += 0x0800;
+
+	VDC_addrh = (sourcebase>>8) & 0xff;					// Obtain high byte of source address
+	VDC_addrl = sourcebase & 0xff;						// Obtain low byte of source address
+	VDC_desth = (vdcbase>>8) & 0xff;					// Obtain high byte of destination address
+	VDC_destl = vdcbase & 0xff;							// Obtain low byte of destination address
+	VDC_tmp1 = viewheight;								// Obtain number of lines to copy
+	VDC_tmp2 = viewwidth;								// Obtain length of lines to copy
+
+	VDC_CopyViewPortToVDC_core();
+}
+
+void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned int sourcewidth, unsigned int sourceheight, unsigned int sourcexoffset, unsigned int sourceyoffset, unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight, unsigned char direction)
+{
+	// Function to scroll a vieuwport on the source screen map on the VDC in the given direction
+	// Input:
+	// - Source:	sourcebase			= source base address in memory
+	//				sourcebak			= memory bank of source (0 or 1)
+	//				sourcewidth			= number of characters per line in source screen map
+	//				sourceheight		= number of lines in source screen map
+	//				sourcexoffset		= horizontal offset on source screen map to start upper left corner of viewpoint
+	//				sourceyoffset		= vertical offset on source screen map to start upper left corner of viewpoint
+	// - Viewport:	xcoord				= x coordinate of viewport upper left corner
+	//				ycoord				= y coordinate of viewport upper left corner
+	//				viewwidth			= width of viewport in number of characters
+	//				viewheight			= heighh of viewport in number of lines
+	// - Direction:	direction			= Bit pattern for direction of scroll:
+	//									  bit 7 set ($01): Left
+	//									  bit 6 set ($02): right
+	//									  bit 5 set ($04): down
+	//									  bit 4 set ($08): up
+
+	unsigned int sourceaddr = VDCBASETEXT + (ycoord*80) + xcoord;
+	unsigned int destaddr = VDCSWAPTEXT + (ycoord*80) + xcoord;
+
+	// First copy viewport to swap screen
+	// Characters
+	VDC_addrh = (sourceaddr>>8) & 0xff;		// Obtain high byte of source address
+	VDC_addrl = sourceaddr & 0xff;			// Obtain low byte of source address
+	VDC_desth = (destaddr>>8) & 0xff;		// Obtain high byte of destination address
+	VDC_destl = destaddr & 0xff;			// Obtain low byte of destination address
+	VDC_tmp1 = viewheight;					// Obtain number of 256 byte pages to copy
+	VDC_tmp2 = --viewwidth;					// Obtain length in last page to copy
+	VDC_ScrollCopy_core();
+
+	// Attributes
+	sourceaddr += 0x0800;
+	destaddr += 0x0800;
+
+	VDC_addrh = (sourceaddr>>8) & 0xff;		// Obtain high byte of source address
+	VDC_addrl = sourceaddr & 0xff;			// Obtain low byte of source address
+	VDC_desth = (destaddr>>8) & 0xff;		// Obtain high byte of destination address
+	VDC_destl = destaddr & 0xff;			// Obtain low byte of destination address
+	VDC_tmp1 = viewheight;					// Obtain number of 256 byte pages to copy
+	VDC_tmp2 = viewwidth;					// Obtain length in last page to copy
+	VDC_ScrollCopy_core();
+
+	// Then copy back to main screen one position scrolled
+	sourceaddr = VDCSWAPTEXT + (ycoord*80) + xcoord;
+	destaddr = VDCBASETEXT + (ycoord*80) + xcoord;
+
+	if(direction == SCROLL_LEFT) { ++sourceaddr; viewwidth--; }
+	if(direction == SCROLL_RIGHT) { ++destaddr; viewwidth--; }
+	if(direction == SCROLL_DOWN) { destaddr += 80; viewheight--; }
+	if(direction == SCROLL_UP) { sourceaddr += 80; viewheight--; }
+
+	// Characters
+	VDC_addrh = (sourceaddr>>8) & 0xff;		// Obtain high byte of source address
+	VDC_addrl = sourceaddr & 0xff;			// Obtain low byte of source address
+	VDC_desth = (destaddr>>8) & 0xff;		// Obtain high byte of destination address
+	VDC_destl = destaddr & 0xff;			// Obtain low byte of destination address
+	VDC_tmp1 = viewheight;					// Obtain number of 256 byte pages to copy
+	VDC_tmp2 = viewwidth;					// Obtain length in last page to copy
+	VDC_ScrollCopy_core();
+
+	// Attributes
+	sourceaddr += 0x0800;
+	destaddr += 0x0800;
+
+	VDC_addrh = (sourceaddr>>8) & 0xff;		// Obtain high byte of source address
+	VDC_addrl = sourceaddr & 0xff;			// Obtain low byte of source address
+	VDC_desth = (destaddr>>8) & 0xff;		// Obtain high byte of destination address
+	VDC_destl = destaddr & 0xff;			// Obtain low byte of destination address
+	VDC_tmp1 = viewheight;					// Obtain number of 256 byte pages to copy
+	VDC_tmp2 = viewwidth;					// Obtain length in last page to copy
+	VDC_ScrollCopy_core();
+
+	// Finally add the new line or column
+	switch (direction)
+	{
+	case SCROLL_LEFT:
+		sourcexoffset += viewwidth;
+		xcoord += viewwidth;
+		viewwidth = 1;
+		break;
+
+	case SCROLL_RIGHT:
+		viewwidth = 1;
+		break;
+
+	case SCROLL_DOWN:
+		viewheight = 1;
+		break;
+
+	case SCROLL_UP:
+		sourceyoffset += viewheight;
+		ycoord += viewheight;
+		viewheight = 1;
+		break;
+	
+	default:
+		break;
+	}
+
+	VDC_CopyViewPortToVDC(sourcebase,sourcebank,sourcewidth,sourceheight,sourcexoffset,sourceyoffset,xcoord,ycoord,viewwidth,viewheight);
+}
+
+// Generic bank switching functions
+
 void SetLoadSaveBank(unsigned char bank)
 {
 	// Function to set bank for I/O operations
@@ -480,4 +630,22 @@ void SetLoadSaveBank(unsigned char bank)
 
 	VDC_tmp1 = bank;
 	SetLoadSaveBank_core();
+}
+
+void POKEB(unsigned int address, unsigned char bank, unsigned char value)
+{
+	VDC_addrh = (address>>8) & 0xff;					// Obtain high byte of address
+	VDC_addrl = address & 0xff;							// Obtain low byte of address
+	VDC_tmp3 = (bank==0)? MMU_BANK0:MMU_BANK1;			// Set proper MMU config based on bank 0 or 1
+	VDC_value = value;									// Store value to POKE 
+	POKEB_core();
+}
+
+unsigned char PEEKB(unsigned int address, unsigned char bank)
+{
+	VDC_addrh = (address>>8) & 0xff;					// Obtain high byte of address
+	VDC_addrl = address & 0xff;							// Obtain low byte of address
+	VDC_tmp3 = (bank==0)? MMU_BANK0:MMU_BANK1;			// Set proper MMU config based on bank 0 or 1
+	POKEB_core();
+	return VDC_value;
 }

@@ -6,11 +6,19 @@
 #define MACOSIZE            0x0800      // Length of machine code area
 
 /* Bank 1 memory addresses mapping */
-#define WINDOWBASEADDRESS   0x2000      // Base address for windows system data, 2k reserved
-#define CHARSETSYSTEM       0x3000      // Base address for system charset
-#define CHARSETNORMAL       0x3800      // Base address for normal charset
-#define CHARSETALTERNATE    0x4000      // Base address for alternate charset
-#define SCREENMAPBASE       0x4800      // Base address for screen map
+#define WINDOWBASEADDRESS   0x2000      // Base address for windows system data, 4k reserved
+#define CHARSETSYSTEM       0x4000      // Base address for system charset
+#define CHARSETNORMAL       0x4800      // Base address for normal charset
+#define CHARSETALTERNATE    0x5000      // Base address for alternate charset
+#define SCREENMAPBASE       0x5800      // Base address for screen map
+
+/* VDC addressing */
+#define VDCBASETEXT         0x0000      // Base address for text screen characters
+#define VDCBASEATTR         0x0800      // Base address for text screen attributes
+#define VDCSWAPTEXT         0x1000      // Base address for swap text screen characters
+#define VDCSWAPATTR         0x1800      // Base address for swap text screen attributes
+#define VDCCHARSTD          0x2000      // Base address for standard charset
+#define VDCCHARALT          0x3000      // Base address for alternate charset
 
 /* Defines for versioning */
 /* Version number */
