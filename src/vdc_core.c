@@ -217,15 +217,8 @@ void VDC_Init(void)
 	POKE(0xd011,PEEK(0xd011)&(~(1<<7)));	// Disable the 8th bit of the SCROLY register to avoid accidentily setting raster interrupt to high
 	set_c128_speed(SPEED_FAST);				// Set C128 speed to FAST (2 Mhz)
 	  
-    // Init screen
-	videomode(VIDEOMODE_80COL);			// Set 80 column mode
-    bordercolor(COLOR_BLACK);
-    bgcolor(COLOR_BLACK);
-    textcolor(COLOR_YELLOW);
-    clrscr();
-
 	// Load $1300 area machine code
-	r = cbm_open(2, getcurrentdevice(), 2, "vdcse.maco");
+	r = cbm_open(2, bootdevice, 2, "vdcse.maco");
 
 	if(r == 0)
 	{
@@ -243,6 +236,13 @@ void VDC_Init(void)
 		printf("Machine code file opening error.\n");
 		exit(1);
 	}
+
+	// Init screen
+	videomode(VIDEOMODE_80COL);			// Set 80 column mode
+    bordercolor(COLOR_BLACK);
+    bgcolor(COLOR_BLACK);
+    textcolor(COLOR_WHITE);
+    VDC_FillArea(0,0,32,80,25,VDC_WHITE);
 }
 
 void VDC_Exit(void)
@@ -327,6 +327,12 @@ unsigned char VDC_CursorAt(unsigned char row, unsigned char col)
 	return 0;
 }
 
+void VDC_SetCursorMode(unsigned char cursorMode)
+{
+	VDC_value = cursorMode;
+	VDC_SetCursorMode_core();
+}
+
 unsigned char VDC_PrintAt(unsigned char row, unsigned char col, char *text, unsigned char attribute)
 {
 	// Function to print string at specified row and column start position, in reverse or not
@@ -356,13 +362,13 @@ void VDC_LoadCharset(char* filename, unsigned int source, unsigned char sourceba
 {
 	// Function to load charset definition from disk and redefine VDC charset using that
 	// Input: filename of char set definition file, destination address and bank in normal memory,
-	//		  flag for standard charset (0) or alternate charset (1)
+	//		  flag for VDC destination to copy to: no copy (0), standard charset (1) or alternate charset (2)
 
 	unsigned int length;
-	unsigned int baseaddress = (stdoralt == 0)? 0x2000:0x3000;
+	unsigned int baseaddress;
 
 	// Set device ID
-	cbm_k_setlfs(0, getcurrentdevice(), 0);
+	cbm_k_setlfs(0, bootdevice, 0);
 
 	// Set filename
 	cbm_k_setnam(filename);
@@ -373,9 +379,10 @@ void VDC_LoadCharset(char* filename, unsigned int source, unsigned char sourceba
 	// Load from file to memory
 	length = cbm_k_load(0,source);
 
-	// Redefine VDC charset
-	if(length>source)
+	// Redefine VDC charset if requested
+	if(length>source && stdoralt != 0)
 	{
+		baseaddress = (stdoralt == 1)? 0x2000:0x3000;
 		VDC_RedefineCharset(source, sourcebank, baseaddress, ((length-source)/8)-1);
 	}
 
@@ -391,7 +398,7 @@ unsigned int VDC_LoadScreen(char* filename, unsigned int source, unsigned char s
 	unsigned int lastreadaddress;
 
 	// Set device ID
-	cbm_k_setlfs(0, getcurrentdevice(), 0);
+	cbm_k_setlfs(0, bootdevice, 0);
 
 	// Set filename
 	cbm_k_setnam(filename);
@@ -421,7 +428,7 @@ unsigned char VDC_SaveScreen(char* filename, unsigned int bufferaddress, unsigne
 	VDC_CopyVDCToMem(0,bufferaddress,bufferbank,4096);
 
 	// Set device ID
-	cbm_k_setlfs(0, getcurrentdevice(), 0);
+	cbm_k_setlfs(0, bootdevice, 0);
 
 	// Set filename
 	cbm_k_setnam(filename);

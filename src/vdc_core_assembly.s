@@ -27,6 +27,7 @@
 	.export		_VDC_WriteRegister_core
 	.export		_VDC_Poke_core
 	.export		_VDC_Peek_core
+	.export		_VDC_SetCursorMode_core
 	.export		_VDC_MemCopy_core
 	.export		_VDC_HChar_core
 	.export		_VDC_VChar_core
@@ -188,6 +189,33 @@ waitvalue2:								; Start of wait loop to wait for VDC status ready
 	bpl waitvalue2			        	; Continue loop if status is not ready
 	lda VDC_DATA_REGISTER	        	; Load VDC data to A
 	sta _VDC_value			        	; Load A to return variable
+    rts
+
+; ------------------------------------------------------------------------------------------
+_VDC_SetCursorMode_core:
+; Function to set cursor mode
+; Input:	VDC_value = Cursormode value
+; ------------------------------------------------------------------------------------------
+
+	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
+	lda #$00		      				; Load zero
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waithighaddresscm:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddresscm        		; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
+	inx					    			; Increase X for register 19 (VDC RAM address low)
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddresscm:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitlowaddresscm		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
+	ldx #$0A							; Load $0A for register 10 in X
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvaluecm:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluecm       				; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
     rts
 
 ; ------------------------------------------------------------------------------------------

@@ -11,6 +11,7 @@
 #define CHARSETNORMAL       0x4800      // Base address for normal charset
 #define CHARSETALTERNATE    0x5000      // Base address for alternate charset
 #define SCREENMAPBASE       0x5800      // Base address for screen map
+#define MEMORYLIMIT         0xCFFF      // Upper memory limit address for address map
 
 /* VDC addressing */
 #define VDCBASETEXT         0x0000      // Base address for text screen characters
@@ -19,6 +20,12 @@
 #define VDCSWAPATTR         0x1800      // Base address for swap text screen attributes
 #define VDCCHARSTD          0x2000      // Base address for standard charset
 #define VDCCHARALT          0x3000      // Base address for alternate charset
+
+/* Char defines */
+#define CH_SPACE            32          // Screencode for space
+
+/* Declaration global variables as externals */
+extern unsigned char bootdevice;
 
 /* Defines for versioning */
 /* Version number */
