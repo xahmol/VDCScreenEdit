@@ -126,6 +126,7 @@ void VDC_Plot(unsigned char row, unsigned char col, unsigned char screencode, un
 void VDC_PlotString(unsigned char row, unsigned char col, char* plotstring, unsigned char length, unsigned char attribute);
 void VDC_CopyViewPortToVDC(unsigned int sourcebase, unsigned char sourcebank, unsigned int sourcewidth, unsigned int sourceheight, unsigned int sourcexoffset, unsigned int sourceyoffset, unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight );
 void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned int sourcewidth, unsigned int sourceheight, unsigned int sourcexoffset, unsigned int sourceyoffset, unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight, unsigned char direction);
+void VDC_ScrollMove(unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight, unsigned char direction);
 
 void SetLoadSaveBank(unsigned char bank);
 void POKEB(unsigned int address, unsigned char bank, unsigned char value);

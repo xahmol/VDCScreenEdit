@@ -104,6 +104,7 @@ int textInput(unsigned char xpos, unsigned char ypos, char* str, unsigned char s
     register unsigned char c;
     register unsigned char idx = strlen(str);
 
+    textcolor(vdctoconiocol[mc_menupopup & 0x0f]);
     cursor(1);
     VDC_PrintAt(ypos,xpos,str,mc_menupopup);
     gotoxy(xpos+idx,ypos);
@@ -575,6 +576,8 @@ void cursormove(unsigned char left, unsigned char right, unsigned char up, unsig
 // Application routines
 void plotmove(direction)
 {
+    // Move cursor
+
     VDC_Plot(screen_row,screen_col,PEEKB(screenmap_screenaddr(yoffset+screen_row,xoffset+screen_col,screenwidth),1),PEEKB(screenmap_attraddr(yoffset+screen_row,xoffset+screen_col,screenwidth,screenheight),1));
 
     switch (direction)
@@ -604,6 +607,8 @@ void plotmove(direction)
 
 void writemode()
 {
+    // Write mode with screencodes
+
     unsigned char key;
 
     do
@@ -641,6 +646,8 @@ void writemode()
 
 void colorwrite()
 {
+    // Write mode with colors
+
     unsigned char key;
 
     do
@@ -696,6 +703,165 @@ void colorwrite()
             break;
         }
     } while (key != CH_ESC);
+}
+
+void plotvisible(unsigned char row, unsigned char col, unsigned char setorrestore)
+{
+    // Plot or erase part of line or box if in visible viewport
+
+    if(row>=yoffset && row<=yoffset+24 && col>=xoffset && col<=xoffset+79)
+    {
+        if(setorrestore==1)
+        {
+            VDC_Plot(row-yoffset, col-xoffset,plotscreencode,VDC_Attribute(plotcolor,plotblink, plotunderline, plotreverse,plotaltchar));
+        }
+        else
+        {
+            VDC_Plot(row-yoffset, col-xoffset,PEEKB(screenmap_screenaddr(row,col,screenwidth),1),PEEKB(screenmap_attraddr(row,col,screenwidth,screenheight),1));
+        }
+    }
+}
+
+void lineandbox()
+{
+    // Select line or box from upper left corner using cursor keys, ESC for cancel and ENTER for accept
+
+    unsigned int startx, starty, endx, endy;
+    unsigned char key;
+    unsigned char x,y;
+
+    startx = screen_col + xoffset;
+    starty = screen_row + yoffset;
+    endx = startx;
+    endy = starty;
+
+    do
+    {
+        key = cgetc();
+
+        switch (key)
+        {
+        case CH_CURS_RIGHT:
+            cursormove(0,1,0,0);
+            endx = screen_col + xoffset;
+            for(y=starty;y<endy+1;y++)
+            {
+                plotvisible(y,endx,1);
+            }
+            break;
+
+        case CH_CURS_LEFT:
+            if(endx>startx)
+            {
+                cursormove(1,0,0,0);
+                for(y=starty;y<endy+1;y++)
+                {
+                    plotvisible(y,endx,0);
+                }
+                endx = screen_col + xoffset;
+            }
+            break;
+
+        case CH_CURS_UP:
+            if(endy>starty)
+            {
+                cursormove(0,0,1,0);
+                for(x=startx;x<endx+1;x++)
+                {
+                    plotvisible(endy,x,0);
+                }
+                endy = screen_row + yoffset;
+            }
+            break;
+
+        case CH_CURS_DOWN:
+            cursormove(0,0,0,1);
+            endy = screen_row + yoffset;
+            for(x=startx;x<endx+1;x++)
+            {
+                plotvisible(endy,x,1);
+            }
+            break;
+        
+        default:
+            break;
+        }
+    } while (key!=CH_ESC && key != CH_ENTER);
+
+    for(y=starty;y<endy+1;y++)
+    {
+        for(x=startx;x<endx+1;x++)
+        {
+            if(key==CH_ENTER)
+            {
+                screenmapplot(y,x,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse,plotaltchar));
+            }
+            else
+            {
+                plotvisible(y,x,0);
+            }
+        }
+    }
+}
+
+void movemode()
+{
+    unsigned char key,y;
+    unsigned char moved = 0;
+
+    cursor(0);
+    VDC_Plot(screen_row,screen_col,PEEKB(screenmap_screenaddr(yoffset+screen_row,xoffset+screen_col,screenwidth),1),PEEKB(screenmap_attraddr(yoffset+screen_row,xoffset+screen_col,screenwidth,screenheight),1));
+
+    do
+    {
+        key = cgetc();
+
+        switch (key)
+        {
+        case CH_CURS_RIGHT:
+            VDC_ScrollMove(0,0,80,25,2);
+            VDC_VChar(0,0,CH_SPACE,25,VDC_WHITE);
+            moved=1;
+            break;
+        
+        case CH_CURS_LEFT:
+            VDC_ScrollMove(0,0,80,25,1);
+            VDC_VChar(0,79,CH_SPACE,25,VDC_WHITE);
+            moved=1;
+            break;
+
+        case CH_CURS_UP:
+            VDC_ScrollMove(0,0,80,25,8);
+            VDC_HChar(24,0,CH_SPACE,80,VDC_WHITE);
+            moved=1;
+            break;
+        
+        case CH_CURS_DOWN:
+            VDC_ScrollMove(0,0,80,25,4);
+            VDC_HChar(0,0,CH_SPACE,80,VDC_WHITE);
+            moved=1;
+            break;
+        
+        default:
+            break;
+        }
+    } while (key != CH_ENTER && key != CH_ESC);
+
+    if(moved==1)
+    {
+        if(key==CH_ENTER)
+        {
+            for(y=0;y<25;y++)
+            {
+                VDC_CopyVDCToMem(VDCBASETEXT+(y*80),screenmap_screenaddr(y+yoffset,xoffset,screenwidth),1,80);
+                VDC_CopyVDCToMem(VDCBASEATTR+(y*80),screenmap_attraddr(y+yoffset,xoffset,screenwidth,screenheight),1,80);
+            }
+        }
+        VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+    }
+
+    cursor(1);
+    VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
 }
 
 void resizewidth()
@@ -1288,14 +1454,27 @@ void main()
             if(newval>16) { plotblink =1; newval -+ 16; } else { plotblink =0; }
             plotcolor = newval;
             textcolor(vdctoconiocol[plotcolor]);
+            VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
             break;
 
+        // Write mode: type in screencodes
         case 'w':
             writemode();
             break;
         
+        // Color mode: type colors
         case 'c':
             colorwrite();
+            break;
+
+        // Line and box mode
+        case 'l':
+            lineandbox();
+            break;
+
+        // Move mode
+        case 'm':
+            movemode();
             break;
 
         // Plot present screencode and attribute
@@ -1308,11 +1487,23 @@ void main()
             screenmapplot(screen_row,screen_col,CH_SPACE,VDC_WHITE);
             break;
 
+        // Go to upper left corner
+        case CH_HOME:
+            screen_row = 0;
+            screen_col = 0;
+            yoffset = 0;
+            xoffset = 0;
+            VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,screen_col,screen_row,80,25);
+            gotoxy(screen_col,screen_row);
+            break;
+
         // Go to menu
         case CH_F1:
             cursor(0);
             mainmenuloop();
+            VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
             gotoxy(screen_col,screen_row);
+            textcolor(vdctoconiocol[plotcolor]);
             cursor(1);
             break;
         
