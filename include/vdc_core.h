@@ -11,7 +11,15 @@
 #ifndef _VDC_CORE_
 #define _VDC_CORE_
 
+/* VDC addressing */
+#define VDCBASETEXT         0x0000      // Base address for text screen characters
+#define VDCBASEATTR         0x0800      // Base address for text screen attributes
+#define VDCSWAPTEXT         0x1000      // Base address for swap text screen characters
+#define VDCSWAPATTR         0x1800      // Base address for swap text screen attributes
+#define VDCCHARSTD          0x2000      // Base address for standard charset
+#define VDCCHARALT          0x3000      // Base address for alternate charset
 
+// VDC color values
 #define VDC_BLACK	0
 #define VDC_DGREY	1
 #define VDC_DBLUE	2
@@ -28,6 +36,9 @@
 #define VDC_LYELLOW	13
 #define VDC_LGREY	14
 #define VDC_WHITE	15
+
+// Translation to conio.h color values
+extern unsigned char vdctoconiocol[16];
 
 #define VDC_CURSORMODE_SOLID      0
 #define VDC_CURSORMODE_NONE       1
@@ -98,7 +109,7 @@ void VDC_VChar(unsigned char row, unsigned char col, unsigned char character, un
 void VDC_CopyMemToVDC(unsigned int vdcAddress, unsigned int memAddress, unsigned char memBank, unsigned int length);
 void VDC_CopyVDCToMem(unsigned int vdcAddress, unsigned int memAddress, unsigned char memBank, unsigned int length);
 void VDC_RedefineCharset(unsigned int source, unsigned char sourcebank, unsigned int dest, unsigned char lengthinchars);
-void VDC_FillArea(unsigned char row, unsigned char col, unsigned char character, unsigned char length, unsigned char heigth, unsigned char attribute);
+void VDC_FillArea(unsigned char row, unsigned char col, unsigned char character, unsigned char length, unsigned char height, unsigned char attribute);
 void VDC_Init(void);
 void VDC_Exit(void);
 unsigned char VDC_PetsciiToScreenCode(unsigned char p);
@@ -107,9 +118,9 @@ unsigned int VDC_RowColToAddress(unsigned char row, unsigned char col);
 void VDC_BackColor(unsigned char color);
 unsigned char VDC_CursorAt(unsigned char row, unsigned char col);
 unsigned char VDC_PrintAt(unsigned char row, unsigned char col, char *text, unsigned char attribute);
-void VDC_LoadCharset(char* filename, unsigned int source, unsigned char sourcebank, unsigned char stdoralt);
-unsigned int VDC_LoadScreen(char* filename, unsigned int source, unsigned char sourcebank);
-unsigned char VDC_SaveScreen(char* filename, unsigned int bufferaddress, unsigned char bufferbank);
+unsigned int VDC_LoadCharset(char* filename, unsigned char deviceid, unsigned int source, unsigned char sourcebank, unsigned char stdoralt);
+unsigned int VDC_LoadScreen(char* filename, unsigned char deviceid, unsigned int source, unsigned char sourcebank);
+unsigned char VDC_SaveScreen(char* filename, unsigned char deviceid, unsigned int bufferaddress, unsigned char bufferbank);
 unsigned char VDC_Attribute(unsigned char textcolor, unsigned char blink, unsigned char underline, unsigned char reverse, unsigned char alternate);
 void VDC_Plot(unsigned char row, unsigned char col, unsigned char screencode, unsigned char attribute);
 void VDC_PlotString(unsigned char row, unsigned char col, char* plotstring, unsigned char length, unsigned char attribute);

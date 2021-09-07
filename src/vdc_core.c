@@ -36,6 +36,8 @@
 #include "defines.h"
 #include "vdc_core.h"
 
+unsigned char vdctoconiocol[16] = {0,12,6,14,5,13,11,3,2,10,8,4,9,7,15,1};
+
 unsigned char VDC_ReadRegister(unsigned char registeraddress)
 {
 	// Function to read a VDC register
@@ -108,7 +110,6 @@ void VDC_HChar(unsigned char row, unsigned char col, unsigned char character, un
 	unsigned int startaddress = VDC_RowColToAddress(row,col);
 	VDC_addrh = (startaddress>>8) & 0xff;	// Obtain high byte of start address
 	VDC_addrl = startaddress & 0xff;		// Obtain low byte of start address
-	VDC_value = VDC_ReadRegister(24) & 128;	// Prepae value for copy bit 7 disabled of register 24
 	VDC_tmp1 = character;					// Obtain character value
 	VDC_tmp2 = length - 1;					// Obtain length value
 	VDC_tmp3 = attribute;					// Ontain attribute value
@@ -187,20 +188,19 @@ void VDC_RedefineCharset(unsigned int source, unsigned char sourcebank, unsigned
 	VDC_RedefineCharset_core();
 }
 
-void VDC_FillArea(unsigned char row, unsigned char col, unsigned char character, unsigned char length, unsigned char heigth, unsigned char attribute)
+void VDC_FillArea(unsigned char row, unsigned char col, unsigned char character, unsigned char length, unsigned char height, unsigned char attribute)
 {
 	// Function to draw area with given character (draws from topleft to bottomright)
 	// Input: row and column of start position (topleft), screencode of character to draw line with,
-	//		  length and heigth in number of character positions, attribute color value
+	//		  length and height in number of character positions, attribute color value
 
 	unsigned int startaddress = VDC_RowColToAddress(row,col);
 	VDC_addrh = (startaddress>>8) & 0xff;	// Obtain high byte of start address
 	VDC_addrl = startaddress & 0xff;		// Obtain low byte of start address
-	VDC_value = VDC_ReadRegister(24) & 128;	// Prepae value for copy bit 7 disabled of register 24
 	VDC_tmp1 = character;					// Obtain character value
 	VDC_tmp2 = length - 1;					// Obtain length value
 	VDC_tmp3 = attribute;					// Ontain attribute value
-	VDC_tmp4 = heigth;						// Obtain number of lines
+	VDC_tmp4 = height;						// Obtain number of lines
 
 	VDC_FillArea_core();
 }
@@ -358,7 +358,7 @@ unsigned char VDC_PrintAt(unsigned char row, unsigned char col, char *text, unsi
 		return -1;
 }
 
-void VDC_LoadCharset(char* filename, unsigned int source, unsigned char sourcebank, unsigned char stdoralt)
+unsigned int VDC_LoadCharset(char* filename, unsigned char deviceid, unsigned int source, unsigned char sourcebank, unsigned char stdoralt)
 {
 	// Function to load charset definition from disk and redefine VDC charset using that
 	// Input: filename of char set definition file, destination address and bank in normal memory,
@@ -368,7 +368,7 @@ void VDC_LoadCharset(char* filename, unsigned int source, unsigned char sourceba
 	unsigned int baseaddress;
 
 	// Set device ID
-	cbm_k_setlfs(0, bootdevice, 0);
+	cbm_k_setlfs(0,deviceid, 0);
 
 	// Set filename
 	cbm_k_setnam(filename);
@@ -382,15 +382,17 @@ void VDC_LoadCharset(char* filename, unsigned int source, unsigned char sourceba
 	// Redefine VDC charset if requested
 	if(length>source && stdoralt != 0)
 	{
-		baseaddress = (stdoralt == 1)? 0x2000:0x3000;
+		baseaddress = (stdoralt == 1)? VDCCHARALT:VDCCHARALT;
 		VDC_RedefineCharset(source, sourcebank, baseaddress, ((length-source)/8)-1);
 	}
 
 	// Restore I/O bank to 0
 	SetLoadSaveBank(0);
+
+	return length;
 }
 
-unsigned int VDC_LoadScreen(char* filename, unsigned int source, unsigned char sourcebank)
+unsigned int VDC_LoadScreen(char* filename, unsigned char deviceid, unsigned int source, unsigned char sourcebank)
 {
 	// Function to load a screen from disk and store to memory
 	// Input: filename, memory address, memory bank
@@ -398,7 +400,7 @@ unsigned int VDC_LoadScreen(char* filename, unsigned int source, unsigned char s
 	unsigned int lastreadaddress;
 
 	// Set device ID
-	cbm_k_setlfs(0, bootdevice, 0);
+	cbm_k_setlfs(0, deviceid, 0);
 
 	// Set filename
 	cbm_k_setnam(filename);
@@ -416,10 +418,10 @@ unsigned int VDC_LoadScreen(char* filename, unsigned int source, unsigned char s
 	return lastreadaddress;
 }
 
-unsigned char VDC_SaveScreen(char* filename, unsigned int bufferaddress, unsigned char bufferbank)
+unsigned char VDC_SaveScreen(char* filename, unsigned char deviceid, unsigned int bufferaddress, unsigned char bufferbank)
 {
-	// Function to save a screen to disk via buffer memory
-	// Input: filename, buffer memory address, buffer memory bank
+	// Function to save a screen to disk from memory
+	// Input: filename, memory address, memory bank
 	// Output: error code
 
 	unsigned char error;
@@ -428,7 +430,7 @@ unsigned char VDC_SaveScreen(char* filename, unsigned int bufferaddress, unsigne
 	VDC_CopyVDCToMem(0,bufferaddress,bufferbank,4096);
 
 	// Set device ID
-	cbm_k_setlfs(0, bootdevice, 0);
+	cbm_k_setlfs(0, deviceid, 0);
 
 	// Set filename
 	cbm_k_setnam(filename);
@@ -552,8 +554,8 @@ void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned 
 	VDC_addrl = sourceaddr & 0xff;			// Obtain low byte of source address
 	VDC_desth = (destaddr>>8) & 0xff;		// Obtain high byte of destination address
 	VDC_destl = destaddr & 0xff;			// Obtain low byte of destination address
-	VDC_tmp1 = viewheight;					// Obtain number of 256 byte pages to copy
-	VDC_tmp2 = --viewwidth;					// Obtain length in last page to copy
+	VDC_tmp1 = --viewheight;				// Obtain number of lines to copy
+	VDC_tmp2 = viewwidth;					// Obtain length of lines to copy
 	VDC_ScrollCopy_core();
 
 	// Attributes
@@ -564,8 +566,8 @@ void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned 
 	VDC_addrl = sourceaddr & 0xff;			// Obtain low byte of source address
 	VDC_desth = (destaddr>>8) & 0xff;		// Obtain high byte of destination address
 	VDC_destl = destaddr & 0xff;			// Obtain low byte of destination address
-	VDC_tmp1 = viewheight;					// Obtain number of 256 byte pages to copy
-	VDC_tmp2 = viewwidth;					// Obtain length in last page to copy
+	VDC_tmp1 = viewheight;					// Obtain number of lines to copy
+	VDC_tmp2 = viewwidth;					// Obtain length of lines to copy
 	VDC_ScrollCopy_core();
 
 	// Then copy back to main screen one position scrolled
@@ -602,29 +604,34 @@ void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned 
 	switch (direction)
 	{
 	case SCROLL_LEFT:
-		sourcexoffset += viewwidth;
+		sourcexoffset += viewwidth+1;
 		xcoord += viewwidth;
 		viewwidth = 1;
+		viewheight++;
 		break;
 
 	case SCROLL_RIGHT:
+		sourcexoffset--;
 		viewwidth = 1;
+		viewheight++;
 		break;
 
 	case SCROLL_DOWN:
+		sourceyoffset--;
 		viewheight = 1;
+		viewwidth;
 		break;
 
 	case SCROLL_UP:
-		sourceyoffset += viewheight;
-		ycoord += viewheight;
+		sourceyoffset += viewheight+2;
+		ycoord += viewheight+1;
 		viewheight = 1;
+		viewwidth;
 		break;
 	
 	default:
 		break;
 	}
-
 	VDC_CopyViewPortToVDC(sourcebase,sourcebank,sourcewidth,sourceheight,sourcexoffset,sourceyoffset,xcoord,ycoord,viewwidth,viewheight);
 }
 
@@ -646,7 +653,7 @@ void POKEB(unsigned int address, unsigned char bank, unsigned char value)
 
 	VDC_addrh = (address>>8) & 0xff;					// Obtain high byte of address
 	VDC_addrl = address & 0xff;							// Obtain low byte of address
-	VDC_tmp3 = (bank==0)? MMU_BANK0:MMU_BANK1;			// Set proper MMU config based on bank 0 or 1
+	VDC_tmp1 = (bank==0)? MMU_BANK0:MMU_BANK1;			// Set proper MMU config based on bank 0 or 1
 	VDC_value = value;									// Store value to POKE 
 	POKEB_core();
 }
@@ -659,8 +666,8 @@ unsigned char PEEKB(unsigned int address, unsigned char bank)
 
 	VDC_addrh = (address>>8) & 0xff;					// Obtain high byte of address
 	VDC_addrl = address & 0xff;							// Obtain low byte of address
-	VDC_tmp3 = (bank==0)? MMU_BANK0:MMU_BANK1;			// Set proper MMU config based on bank 0 or 1
-	POKEB_core();
+	VDC_tmp1 = (bank==0)? MMU_BANK0:MMU_BANK1;			// Set proper MMU config based on bank 0 or 1
+	PEEKB_core();
 	return VDC_value;
 }
 

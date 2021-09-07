@@ -227,7 +227,6 @@ _VDC_MemCopy_core:
 ;			VDC_destl = low byte of destination address
 ;			VDC_tmp1 = number of 256 byte pages to copy
 ;			VDC_tmp2 = length in last page to copy
-;			VDC_value = Set value for copy bit 7 enabled of register 24
 ; ------------------------------------------------------------------------------------------
 
 loopmemcpy:
@@ -304,7 +303,6 @@ _VDC_HChar_core:
 ; Function to draw horizontal line with given character (draws from left to right)
 ; Input:	VDC_addrh = igh byte of start address
 ;			VDC_addrl = ow byte of start address
-;			VDC_value = Prepae value for copy bit 7 disabled of register 24
 ;			VDC_tmp1 = character value
 ;			VDC_tmp2 = length value
 ;			VDC_tmp3 = attribute value
@@ -339,7 +337,7 @@ waitvalue4:								; Start of wait loop to wait for VDC status ready
 
 	; Clear the copy bit (bit 7) of register 24 (block copy mode)
 	ldx #$18    						; Load $18 for register 24 (block copy mode) in X	
-	lda _VDC_value			        	; Load prepared value with bit 7 set in A
+	lda #$00				        	; Load 0 in A
 	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
 waitclearcopybit:						; Start of wait loop to wait for VDC status ready
 	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
@@ -388,7 +386,7 @@ waitvalueatt:							; Start of wait loop to wait for VDC status ready
 
 	; Clear the copy bit (bit 7) of register 24 (block copy mode)
 	ldx #$18    						; Load $18 for register 24 (block copy mode) in X	
-	lda _VDC_value			        	; Load prepared value with bit 7 set in A
+	lda #$00				        	; Load prepared value with bit 7 set in A
 	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
 waitclearcopybitatt:					; Start of wait loop to wait for VDC status ready
 	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
@@ -798,7 +796,6 @@ _VDC_FillArea_core:
 ; Function to draw area with given character (draws from topleft to bottomright)
 ; Input:	VDC_addrh = high byte of start address
 ;			VDC_addrl = low byte of start address
-;			VDC_value = Prepae value for copy bit 7 disabled of register 24
 ;			VDC_tmp1 = haracter value
 ;			VDC_tmp2 = length value
 ;			VDC_tmp3 = attribute value
@@ -938,7 +935,6 @@ _VDC_ScrollCopy_core:
 ;			VDC_destl = low byte of destination address
 ;			VDC_tmp1 = number of lines to copy
 ;			VDC_tmp2 = length per line to copy
-;			VDC_value = Set value for copy bit 7 enabled of register 24
 ; ------------------------------------------------------------------------------------------
 
 loopscrollcpy:
@@ -1016,6 +1012,8 @@ waitsetlengthsc:						; Start of wait loop to wait for VDC status ready
 
 	; Decrease line counter and loop until last page
 	dec _VDC_tmp1		        		; Decrease line counter
+	lda _VDC_tmp1						; Load counter to A
+	cmp #$ff							; Check if below zero
 	beq scrollcpyend			        ; Go to end if counter is zero
 	jmp loopscrollcpy					; Jump to start of copy loop if not zero
 scrollcpyend:
