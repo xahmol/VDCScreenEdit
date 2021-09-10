@@ -17,6 +17,9 @@
 ; DevDef: Commodore 128 Assembly - Part 3: The 80-column (8563) chip
 ; https://devdef.blogspot.com/2018/03/commodore-128-assembly-part-3-80-column.html
 ;
+; Tips and Tricks for C128: VDC
+; http://commodore128.mirkosoft.sk/vdc.html
+;
 ; 6502.org: Practical Memory Move Routines
 ; http://6502.org/source/general/memory_move.html
 ;
@@ -27,6 +30,9 @@
 	.export		_VDC_WriteRegister_core
 	.export		_VDC_Poke_core
 	.export		_VDC_Peek_core
+	.export		_VDC_DetectVDCMemSize_core
+	.export		_VDC_SetExtendedVDCMemSize
+	.export		_VDC_CopyCharsetsfromROM
 	.export		_VDC_SetCursorMode_core
 	.export		_VDC_MemCopy_core
 	.export		_VDC_HChar_core
@@ -190,6 +196,147 @@ waitvalue2:								; Start of wait loop to wait for VDC status ready
 	lda VDC_DATA_REGISTER	        	; Load VDC data to A
 	sta _VDC_value			        	; Load A to return variable
     rts
+
+; ------------------------------------------------------------------------------------------
+_VDC_DetectVDCMemSize_core:
+; Function to detect the VDC memory size
+; Output:	VDC_value = memory size in KB (16 or 64)
+; ------------------------------------------------------------------------------------------
+
+	; Setting memory mode to 64KB
+	; Reading register 28, safeguarding value, setting bit 4 and storing back to register 28
+	ldx #$1c							; Load $1c for register 28 in X
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadydms1:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadydms1                 ; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER               ; Load data to A from VDC data register
+	tay									; Transfer A to Y to save value for later restore
+	ora #$10							; Set bit 4 of A
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadydms2:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadydms2                 ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
+
+	; Writing a $00 value to VDC $1fff
+	ldx #$12                            ; Load $12 for register 18 (VDC RAM address high) in X	
+	lda #$1f                    		; Load high byte of address in A
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddressdms1:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddressdms1		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
+	inx		    						; Increase X for register 19 (VDC RAM address low)
+	lda #$ff      						; Load low byte of address in A
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddressdms1:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER           	; Check status bit 7 of VDC address register
+	bpl waitlowaddressdms1    			; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
+	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
+	lda #$00       						; Load value to store in A
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvaluedms1:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluedms1     				; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
+
+	; Writing a $ff value to VDC $9fff
+	ldx #$12                            ; Load $12 for register 18 (VDC RAM address high) in X	
+	lda #$9f                    		; Load high byte of address in A
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddressdms2:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddressdms2		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
+	inx		    						; Increase X for register 19 (VDC RAM address low)
+	lda #$ff      						; Load low byte of address in A
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddressdms2:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER           	; Check status bit 7 of VDC address register
+	bpl waitlowaddressdms2    			; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
+	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
+	lda #$ff       						; Load value to store in A
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvaluedms2:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluedms2     				; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
+
+	; Reading back value of VDC $1fff
+    ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
+	lda #$1f		     				; Load high byte of address in A
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waithighaddressdms3:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddressdms3        		; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
+	inx					    			; Increase X for register 19 (VDC RAM address low)
+	lda #$ff    	    				; Load low byte of address in A
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddressdms3:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitlowaddressdms3			    ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
+	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvaluedms3:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluedms3		        	; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER	        	; Load VDC data to A
+
+	; Comparing value with $ff to see if 64KB address could be read
+	bne sixteendetected					; If not equal 16KB detected, so branch
+	lda #64								; Load 64 as value to A
+	jmp dmsend							; Jump to end of routine
+sixteendetected:						; Label for 16KB detected
+	lda #16								; Load 16 as value to A
+
+	; Restore bit 4 of register 28
+dmsend:									; Label for end of routine
+	sta _VDC_value						; Load KB size to return value
+	tya									; Transfer value stored in Y back to A
+	ldx #$1c							; Store $1c in A for register 28
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadydms3:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadydms3                 ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
+	rts									; Return
+
+; ------------------------------------------------------------------------------------------
+_VDC_SetExtendedVDCMemSize:
+; Function to set VDC in 64k memory configuration
+; NB: Charsets need to be copied from ROM again after doing this
+; ------------------------------------------------------------------------------------------
+
+	; Setting memory mode to 64KB
+	; Reading register 28, safeguarding value, setting bit 4 and storing back to register 28
+	ldx #$1c							; Load $1c for register 28 in X
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadysev1:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadysev1	                ; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER               ; Load data to A from VDC data register
+	ora #$10							; Set bit 4 of A
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadysev2:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadysev2                 ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
+	rts
+
+; ------------------------------------------------------------------------------------------
+_VDC_CopyCharsetsfromROM:
+; Function to set VDC in 64k memory configuration
+; NB: Charsets need to be copied from ROM again after doing this
+; ------------------------------------------------------------------------------------------
+
+	; Kernal call to DLCHR kernal function to copy charsets from ROM to VDC
+	jsr	$FF62							;initialize 8563 char. defns.
+	rts
 
 ; ------------------------------------------------------------------------------------------
 _VDC_SetCursorMode_core:

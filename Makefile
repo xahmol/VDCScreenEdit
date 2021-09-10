@@ -5,7 +5,7 @@
 
 SOURCESMAIN = src/main.c src/vdc_core.c
 SOURCESLIB = src/vdc_core_assembly.s
-OBJECTS = vdcse.maco.prg vdcse.sfon.prg
+OBJECTS = vdcse.maco.prg vdcse.sfon.prg vdcse.tscr.prg
 
 ZIP = vdcscreenedit-$(shell date "+%Y%m%d-%H%M").zip
 D64 = vdcse.d64
@@ -45,6 +45,7 @@ $(D64):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D64) -write vdcse.prg vdcse
 	c1541 -attach $(D64) -write vdcse.maco.prg vdcse.maco
 	c1541 -attach $(D64) -write vdcse.sfon.prg vdcse.sfon
+	c1541 -attach $(D64) -write vdcse.tscr.prg vdcse.tscr
 
 clean:
 	$(RM) $(SOURCESMAIN:.c=.o) $(SOURCESMAIN:.c=.d) $(MAIN) $(MAIN).map

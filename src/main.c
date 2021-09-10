@@ -48,9 +48,25 @@ char pulldownmenutitles[5][5][16] = {
     {"Version/credits",
      "Help           ",
      "Exit program   "},
-    {"Yes",
+    {"Yes",\
      "No "}
 };
+
+// Undo data
+unsigned char vdcmemory;
+unsigned char undoenabled = 0;
+unsigned char undoaddress;
+unsigned char undonumber;
+unsigned char undomaxnumber;
+struct UndoStruct
+{
+    unsigned int address;
+    unsigned char ystart;
+    unsigned char xstart;
+    unsigned char height;
+    unsigned char width;
+};
+struct UndoStruct Undo[10];
 
 // Menucolors
 unsigned char mc_mb_normal = VDC_LGREEN + VDC_A_REVERSE + VDC_A_ALTCHAR;
@@ -61,6 +77,7 @@ unsigned char mc_menupopup = VDC_WHITE + VDC_A_REVERSE + VDC_A_ALTCHAR;
 
 // Global variables
 unsigned char bootdevice;
+char DOSstatus[40];
 unsigned char charsetchanged[2];
 unsigned char appexit;
 unsigned char targetdevice;
@@ -68,8 +85,8 @@ char filename[21];
 
 unsigned char screen_col;
 unsigned char screen_row;
-unsigned char xoffset;
-unsigned char yoffset;
+unsigned int xoffset;
+unsigned int yoffset;
 unsigned int screenwidth;
 unsigned int screenheight;
 unsigned int screentotal;
@@ -80,11 +97,50 @@ unsigned char plotreverse;
 unsigned char plotunderline;
 unsigned char plotblink;
 unsigned char plotaltchar;
+unsigned int select_startx, select_starty, select_endx, select_endy, select_width, select_heigth, select_accept;
 
 char buffer[81];
 char version[22];
 
 // Generic routines
+unsigned char dosCommand(const unsigned char lfn, const unsigned char drive, const unsigned char sec_addr, const char *cmd)
+{
+  int res;
+  if (cbm_open(lfn, drive, sec_addr, cmd) != 0)
+    {
+      return _oserror;
+    }
+
+  if (lfn != 15)
+    {
+      if (cbm_open(15, drive, 15, "") != 0)
+        {
+          cbm_close(lfn);
+          return _oserror;
+        }
+    }
+
+  DOSstatus[0] = 0;
+  res = cbm_read(15, DOSstatus, sizeof(DOSstatus));
+
+  if(lfn != 15)
+    {
+      cbm_close(15);
+    }
+  cbm_close(lfn);
+
+  if (res < 1)
+    {
+      return _oserror;
+    }
+
+  return (DOSstatus[0] - 48) * 10 + DOSstatus[1] - 48;
+}
+
+unsigned int cmd(const unsigned char device, const char *cmd)
+{
+  return dosCommand(15, device, 15, cmd);
+}
 
 int textInput(unsigned char xpos, unsigned char ypos, char* str, unsigned char size)
 {
@@ -436,12 +492,13 @@ unsigned char menumain()
     return menubarchoice*10+menuoptionchoice;    
 }
 
-unsigned char areyousure(unsigned char syscharset)
+unsigned char areyousure(char* message, unsigned char syscharset)
 {
     /* Pull down menu to verify if player is sure */
     unsigned char choice;
 
     windownew(8,8,6,30,syscharset);
+    VDC_PrintAt(9,10,message,mc_menupopup);
     VDC_PrintAt(10,10,"Are you sure?",mc_menupopup);
     choice = menupulldown(25,11,5,0);
     windowrestore(syscharset);
@@ -462,6 +519,17 @@ void fileerrormessage(unsigned char error, unsigned char syscharset)
     VDC_PrintAt(13,10,"Press key.",mc_menupopup);
     cgetc();
     windowrestore(syscharset);    
+}
+
+void messagepopup(char* message, unsigned char syscharset)
+{
+    // Show popup with a message
+
+    windownew(8,8,6,30,syscharset);
+    VDC_PrintAt(10,10,message,mc_menupopup);
+    VDC_PrintAt(12,10,"Press key.",mc_menupopup);
+    cgetc();
+    windowrestore(syscharset);  
 }
 
 // Generic screen map routines
@@ -625,45 +693,6 @@ void writemode()
             plotmove(key);
             break;
 
-        // Delete present screencode and attributes
-        case CH_DEL:
-            screenmapplot(screen_row,screen_col,CH_SPACE,VDC_WHITE);
-            VDC_Plot(screen_col,screen_row,CH_SPACE,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
-            break;
-
-        // Write printable character                
-        default:
-            if(isprint(key))
-            {
-                screenmapplot(screen_row+yoffset,screen_col+xoffset,VDC_PetsciiToScreenCode(key),VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
-                //VDC_Plot(screen_row,screen_col,VDC_PetsciiToScreenCode(key),VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
-                plotmove(CH_CURS_RIGHT);
-            }
-            break;
-        }
-    } while (key != CH_ESC);
-}
-
-void colorwrite()
-{
-    // Write mode with colors
-
-    unsigned char key;
-
-    do
-    {
-        key = cgetc();
-
-        switch (key)
-        {
-        // Cursor move
-        case CH_CURS_LEFT:
-        case CH_CURS_RIGHT:
-        case CH_CURS_UP:
-        case CH_CURS_DOWN:
-            plotmove(key);
-            break;
-
         // Toggle blink
         case CH_F1:
             plotblink = (plotblink==0)? 1:0;
@@ -686,18 +715,92 @@ void colorwrite()
         case CH_F7:
             plotaltchar = (plotaltchar==0)? 1:0;
             VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+            break;
+
+        // Delete present screencode and attributes
+        case CH_DEL:
+            screenmapplot(screen_row,screen_col,CH_SPACE,VDC_WHITE);
+            VDC_Plot(screen_row,screen_col,CH_SPACE,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+            break;
+
+        // Write printable character                
+        default:
+            if(isprint(key))
+            {
+                screenmapplot(screen_row+yoffset,screen_col+xoffset,VDC_PetsciiToScreenCode(key),VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+                //VDC_Plot(screen_row,screen_col,VDC_PetsciiToScreenCode(key),VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+                plotmove(CH_CURS_RIGHT);
+            }
+            break;
+        }
+    } while (key != CH_ESC);
+}
+
+void colorwrite()
+{
+    // Write mode with colors
+
+    unsigned char key, attribute;
+
+    do
+    {
+        key = cgetc();
+
+        // Get old attribute value
+        attribute = PEEKB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1);
+
+        switch (key)
+        {
+
+        // Cursor move
+        case CH_CURS_LEFT:
+        case CH_CURS_RIGHT:
+        case CH_CURS_UP:
+        case CH_CURS_DOWN:
+            plotmove(key);
+            break;
+
+        // Toggle blink
+        case CH_F1:
+            attribute ^= 0x10;           // Toggle bit 4 for blink
+            POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
+            plotmove(CH_CURS_RIGHT);
+            break;
+
+        // Toggle underline
+        case CH_F3:
+            attribute ^= 0x20;           // Toggle bit 5 for underline
+            POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
+            plotmove(CH_CURS_RIGHT);
+            break;
+
+        // Toggle reverse
+        case CH_F5:
+            attribute ^= 0x40;           // Toggle bit 6 for reverse
+            POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
+            plotmove(CH_CURS_RIGHT);
+
+        // Toggle alternate character set
+        case CH_F7:
+            attribute ^= 0x80;           // Toggle bit 7 for alternate charset
+            POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
+            plotmove(CH_CURS_RIGHT);
             break;            
 
         default:
             // If keypress is 0-9 or A-F select color
             if(key>47 && key<58)
             {
-                POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,VDC_Attribute(key-48, plotblink, plotunderline, plotreverse, plotaltchar));
+                attribute &= 0xf0;                  // Erase bits 0-3
+                attribute += (key -48);             // Add color 0-9 with key 0-9
+                POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
                 plotmove(CH_CURS_RIGHT);
             }
             if(key>64 && key<71)
             {
-                POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,VDC_Attribute(key-55, plotblink, plotunderline, plotreverse, plotaltchar));
+                attribute &= 0xf0;                  // Erase bits 0-3
+                attribute += (key -55);             // Add color 10-15 with key A-F
+                POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
                 plotmove(CH_CURS_RIGHT);
             }
             break;
@@ -722,18 +825,19 @@ void plotvisible(unsigned char row, unsigned char col, unsigned char setorrestor
     }
 }
 
-void lineandbox()
+void lineandbox(unsigned char draworselect)
 {
     // Select line or box from upper left corner using cursor keys, ESC for cancel and ENTER for accept
+    // Input: draworselect: Choose select mode (0) or draw mode (1)
 
-    unsigned int startx, starty, endx, endy;
     unsigned char key;
     unsigned char x,y;
 
-    startx = screen_col + xoffset;
-    starty = screen_row + yoffset;
-    endx = startx;
-    endy = starty;
+    select_startx = screen_col + xoffset;
+    select_starty = screen_row + yoffset;
+    select_endx = select_startx;
+    select_endy = select_starty;
+    select_accept = 0;
 
     do
     {
@@ -743,43 +847,43 @@ void lineandbox()
         {
         case CH_CURS_RIGHT:
             cursormove(0,1,0,0);
-            endx = screen_col + xoffset;
-            for(y=starty;y<endy+1;y++)
+            select_endx = screen_col + xoffset;
+            for(y=select_starty;y<select_endy+1;y++)
             {
-                plotvisible(y,endx,1);
+                plotvisible(y,select_endx,1);
             }
             break;
 
         case CH_CURS_LEFT:
-            if(endx>startx)
+            if(select_endx>select_startx)
             {
                 cursormove(1,0,0,0);
-                for(y=starty;y<endy+1;y++)
+                for(y=select_starty;y<select_endy+1;y++)
                 {
-                    plotvisible(y,endx,0);
+                    plotvisible(y,select_endx,0);
                 }
-                endx = screen_col + xoffset;
+                select_endx = screen_col + xoffset;
             }
             break;
 
         case CH_CURS_UP:
-            if(endy>starty)
+            if(select_endy>select_starty)
             {
                 cursormove(0,0,1,0);
-                for(x=startx;x<endx+1;x++)
+                for(x=select_startx;x<select_endx+1;x++)
                 {
-                    plotvisible(endy,x,0);
+                    plotvisible(select_endy,x,0);
                 }
-                endy = screen_row + yoffset;
+                select_endy = screen_row + yoffset;
             }
             break;
 
         case CH_CURS_DOWN:
             cursormove(0,0,0,1);
-            endy = screen_row + yoffset;
-            for(x=startx;x<endx+1;x++)
+            select_endy = screen_row + yoffset;
+            for(x=select_startx;x<select_endx+1;x++)
             {
-                plotvisible(endy,x,1);
+                plotvisible(select_endy,x,1);
             }
             break;
         
@@ -788,19 +892,21 @@ void lineandbox()
         }
     } while (key!=CH_ESC && key != CH_ENTER);
 
-    for(y=starty;y<endy+1;y++)
+    select_width = select_endx-select_startx+1;
+    select_heigth = select_endy-select_starty+1;
+
+    if(key==CH_ENTER && draworselect ==1)
     {
-        for(x=startx;x<endx+1;x++)
+        for(y=select_starty;y<select_endy+1;y++)
         {
-            if(key==CH_ENTER)
-            {
-                screenmapplot(y,x,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse,plotaltchar));
-            }
-            else
-            {
-                plotvisible(y,x,0);
-            }
+            BankMemSet(screenmap_screenaddr(y,select_startx,screenwidth),1,plotscreencode,select_width);
+            BankMemSet(screenmap_attraddr(y,select_startx,screenwidth,screenheight),1,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse,plotaltchar),select_width);
         }
+    }
+    else
+    {
+        VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+        if(key==CH_ENTER) { select_accept=1; }
     }
 }
 
@@ -864,6 +970,86 @@ void movemode()
     VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
 }
 
+void selectmode()
+{
+    unsigned char key,movekey,y;
+
+    movekey = 0;
+    lineandbox(0);
+    if(select_accept == 0) { return; }
+
+    do
+    {
+        key=cgetc();
+    } while (key !='d' && key !='x' && key !='c' && key != 'p' && key != CH_ESC );
+
+    if(key!=CH_ESC)
+    {
+        if((key=='x' || key=='c')&&(select_width>4096))
+        {
+            messagepopup("Selection too big.",1);
+            return;
+        }
+
+        if(key=='x' || key=='c')
+        {
+            do
+            {
+                movekey = cgetc();
+
+                switch (movekey)
+                {
+                // Cursor move
+                case CH_CURS_LEFT:
+                case CH_CURS_RIGHT:
+                case CH_CURS_UP:
+                case CH_CURS_DOWN:
+                    plotmove(movekey);
+                    break;
+
+                default:
+                    break;
+                }
+            } while (movekey != CH_ESC && movekey != CH_ENTER);
+
+            if(movekey==CH_ENTER)
+            {
+                if((screen_col+xoffset+select_width>screenwidth) || (screen_row+yoffset+select_heigth>screenheight))
+                {
+                    messagepopup("Selection does not fit.",1);
+                    return;
+                }
+
+                for(y=0;y<select_heigth;y++)
+                {
+                    VDC_CopyMemToVDC(VDCSWAPTEXT,screenmap_screenaddr(select_starty+y,select_startx,screenwidth),1, select_width);
+                    VDC_CopyVDCToMem(VDCSWAPTEXT,screenmap_screenaddr(screen_row+yoffset+y,screen_col+xoffset,screenwidth),1,select_width);
+                    VDC_CopyMemToVDC(VDCSWAPTEXT,screenmap_attraddr(select_starty+y,select_startx,screenwidth,  screenheight),1,select_width);
+                    VDC_CopyVDCToMem(VDCSWAPTEXT,screenmap_attraddr(screen_row+yoffset+y,screen_col+xoffset,screenwidth,  screenheight),1,select_width);
+                }
+            }
+        }
+
+        if((key=='d' || key=='x')&& movekey!=CH_ESC)
+        {
+            for(y=0;y<select_heigth;y++)
+            {
+                BankMemSet(screenmap_screenaddr(select_starty+y,select_startx,screenwidth),1,CH_SPACE,select_width);
+                BankMemSet(screenmap_attraddr(select_starty+y,select_startx,screenwidth,screenheight),1,VDC_WHITE,select_width);
+            }
+        }
+
+        if(key=='p')
+        {
+            for(y=0;y<select_heigth;y++)
+            {
+                BankMemSet(screenmap_attraddr(select_starty+y,select_startx,screenwidth,screenheight),1,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar),select_width);
+            }
+        }
+        VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+    }
+}
+
 void resizewidth()
 {
     unsigned int newwidth = screenwidth;
@@ -898,11 +1084,13 @@ void resizewidth()
             {
                 for(y=1;y<screenheight;y++)
                 {
-                    BankMemCopy(screenmap_screenaddr(y,0,screenwidth),1,screenmap_screenaddr(y,0,newwidth),1,newwidth);
+                    VDC_CopyMemToVDC(VDCSWAPTEXT,screenmap_screenaddr(y,0,screenwidth),1,newwidth);
+                    VDC_CopyVDCToMem(VDCSWAPTEXT,screenmap_screenaddr(y,0,newwidth),1,newwidth);
                 }
                 for(y=0;y<screenheight;y++)
                 {
-                    BankMemCopy(screenmap_attraddr(y,0,screenwidth,screenheight),1,screenmap_attraddr(y,0,newwidth,screenheight),1,newwidth);
+                    VDC_CopyMemToVDC(VDCSWAPTEXT,screenmap_attraddr(y,0,screenwidth,screenheight),1,newwidth);
+                    VDC_CopyVDCToMem(VDCSWAPTEXT,screenmap_attraddr(y,0,newwidth,screenheight),1,newwidth);
                 }
                 if(screen_col>newwidth-1) { screen_col=newwidth-1; }
                 sizechanged = 1;
@@ -912,12 +1100,14 @@ void resizewidth()
         {
             for(y=0;y<screenheight;y++)
             {
-                BankMemCopy(screenmap_attraddr(screenheight-y-1,0,screenwidth,screenheight),1,screenmap_attraddr(screenheight-y-1,0,newwidth,screenheight),1,screenwidth);
+                VDC_CopyMemToVDC(VDCSWAPTEXT,screenmap_attraddr(screenheight-y-1,0,screenwidth,screenheight),1,screenwidth);
+                VDC_CopyVDCToMem(VDCSWAPTEXT,screenmap_attraddr(screenheight-y-1,0,newwidth,screenheight),1,screenwidth);
                 BankMemSet(screenmap_attraddr(screenheight-y-1,screenwidth,newwidth,screenheight),1,VDC_WHITE,newwidth-screenwidth);
             }
             for(y=0;y<screenheight;y++)
             {
-                BankMemCopy(screenmap_screenaddr(screenheight-y-1,0,screenwidth),1,screenmap_screenaddr(screenheight-y-1,0,newwidth),1,screenwidth);
+                VDC_CopyMemToVDC(VDCSWAPTEXT,screenmap_screenaddr(screenheight-y-1,0,screenwidth),1,screenwidth);
+                VDC_CopyVDCToMem(VDCSWAPTEXT,screenmap_screenaddr(screenheight-y-1,0,newwidth),1,screenwidth);
                 BankMemSet(screenmap_screenaddr(screenheight-y-1,screenwidth,newwidth),1,CH_SPACE,newwidth-screenwidth);
             }
             sizechanged = 1;
@@ -1098,7 +1288,7 @@ void changebackgroundcolor()
     windowrestore(0);    
 }
 
-void chooseidandfilename(char* headertext)
+void chooseidandfilename(char* headertext, unsigned char maxlen)
 {
     unsigned char newtargetdevice;
     unsigned char valid = 0;
@@ -1122,7 +1312,31 @@ void chooseidandfilename(char* headertext)
         }
     } while (valid==0);
     VDC_PrintAt(10,21,"Choose filename:            ",mc_menupopup);
-    textInput(21,11,filename,15);
+    textInput(21,11,filename,maxlen);
+}
+
+unsigned char checkiffileexists(char* filetocheck, unsigned char id)
+{
+    // Check if file exists and, if yes, ask confirmation of overwrite
+    
+    unsigned char proceed = 1;
+    unsigned char yesno;
+    unsigned char error;
+
+    sprintf(buffer,"r0:%s=%s",filetocheck,filetocheck);
+    error = cmd(id,buffer);
+
+    if (error == 63)
+    {
+        yesno = areyousure("File exists.",0);
+        if(yesno==2)
+        {
+            proceed = 0;
+        }
+    }
+    cbm_close(2);
+
+    return proceed;
 }
 
 void loadscreenmap()
@@ -1131,7 +1345,7 @@ void loadscreenmap()
     unsigned int maxsize = MEMORYLIMIT - SCREENMAPBASE;
     char* ptrend;
   
-    chooseidandfilename("Load screen");
+    chooseidandfilename("Load screen",15);
 
     VDC_PrintAt(12,21,"Enter screen width:",mc_menupopup);
     sprintf(buffer,"%i",screenwidth);
@@ -1171,33 +1385,188 @@ void savescreenmap()
 {
     unsigned char error;
   
-    chooseidandfilename("Save screen");
+    chooseidandfilename("Save screen",15);
 
     windowrestore(0);
 
-    // Set device ID
-	cbm_k_setlfs(0, targetdevice, 0);
+    if(checkiffileexists(filename,targetdevice)==1)
+    {
+        // Scratch old file
+        sprintf(buffer,"s:%s",filename);
+        cmd(targetdevice,buffer);
 
-	// Set filename
-	cbm_k_setnam(filename);
+        // Set device ID
+	    cbm_k_setlfs(0, targetdevice, 0);
+    
+	    // Set filename
+	    cbm_k_setnam(filename);
+    
+	    // Set bank
+	    SetLoadSaveBank(1);
+    
+	    // Load from file to memory
+	    error = cbm_k_save(SCREENMAPBASE,SCREENMAPBASE+(screenwidth*screenheight*2)+48);
+    
+	    // Restore I/O bank to 0
+	    SetLoadSaveBank(0);
+    
+        if(error) { fileerrormessage(error,0); }
+    }
+}
 
-	// Set bank
-	SetLoadSaveBank(1);
-	
-	// Load from file to memory
-	error = cbm_k_save(SCREENMAPBASE,SCREENMAPBASE+(screenwidth*screenheight*2)+48);
+void saveproject()
+{
+    unsigned char error;
+    unsigned char projbuffer[22];
 
-	// Restore I/O bank to 0
+    chooseidandfilename("Save project",10);
+
+    sprintf(buffer,"%s.proj",filename);
+
+    windowrestore(0);
+
+    if(checkiffileexists(buffer,targetdevice)==1)
+    {
+        // Scratch old files
+        sprintf(buffer,"s:%s.proj",filename);
+        cmd(targetdevice,buffer);
+        sprintf(buffer,"s:%s.scrn",filename);
+        cmd(targetdevice,buffer);
+        sprintf(buffer,"s:%s.chrs",filename);
+        cmd(targetdevice,buffer);
+        sprintf(buffer,"s:%s.chra",filename);
+        cmd(targetdevice,buffer);
+
+        // Store project data to buffer variable
+	    SetLoadSaveBank(0);
+        projbuffer[ 0] = charsetchanged[0];
+        projbuffer[ 1] = charsetchanged[1];
+        projbuffer[ 2] = screen_col;
+        projbuffer[ 3] = screen_row;
+        projbuffer[ 4] = (screenwidth>>8) & 0xff;
+        projbuffer[ 5] = screenwidth & 0xff;
+        projbuffer[ 6] = (screenheight>>8) & 0xff;
+        projbuffer[ 7] = screenheight & 0xff;
+        projbuffer[ 8] = (screentotal>>8) & 0xff;
+        projbuffer[ 9] = screentotal & 0xff;
+        projbuffer[10] = screenbackground;
+        projbuffer[11] = mc_mb_normal;
+        projbuffer[12] = mc_mb_select;
+        projbuffer[13] = mc_pd_normal;
+        projbuffer[14] = mc_pd_select;
+        projbuffer[15] = mc_menupopup;
+        projbuffer[16] = plotscreencode;
+        projbuffer[17] = plotcolor;
+        projbuffer[18] = plotreverse;
+        projbuffer[19] = plotunderline;
+        projbuffer[20] = plotblink;
+        projbuffer[21] = plotaltchar;
+	    cbm_k_setlfs(0, targetdevice, 0);
+        sprintf(buffer,"%s.proj",filename);
+	    cbm_k_setnam(buffer);
+	    error = cbm_k_save((unsigned int)projbuffer,(unsigned int)projbuffer+22);
+        if(error) { fileerrormessage(error,0); }
+
+        // Store screen data
+        SetLoadSaveBank(1);
+        cbm_k_setlfs(0, targetdevice, 0);
+        sprintf(buffer,"%s.scrn",filename);
+	    cbm_k_setnam(buffer);
+	    error = cbm_k_save(SCREENMAPBASE,SCREENMAPBASE+(screenwidth*screenheight*2)+48);
+        if(error) { fileerrormessage(error,0); }
+
+        // Store standard charset
+        if(charsetchanged[0]==1)
+        {
+            cbm_k_setlfs(0, targetdevice, 0);
+            sprintf(buffer,"%s.chrs",filename);
+	        cbm_k_setnam(buffer);
+	        error = cbm_k_save(CHARSETNORMAL,CHARSETNORMAL+256*8);
+            if(error) { fileerrormessage(error,0); }
+        }
+
+        // Store alternate charset
+        if(charsetchanged[1]==1)
+        {
+            cbm_k_setlfs(0, targetdevice, 0);
+            sprintf(buffer,"%s.chra",filename);
+	        cbm_k_setnam(buffer);
+	        error = cbm_k_save(CHARSETALTERNATE,CHARSETALTERNATE+256*8);
+            if(error) { fileerrormessage(error,0); }
+        }
+    
+	    // Restore I/O bank to 0
+	    SetLoadSaveBank(0);        
+    }
+}
+
+void loadproject()
+{
+    unsigned int lastreadaddress;
+    unsigned char projbuffer[22];
+
+    chooseidandfilename("Load project",10);
+
+    windowrestore(0);
+
+    // Load project variables
+    sprintf(buffer,"%s.proj",filename);
+	cbm_k_setlfs(0,targetdevice, 0);
+	cbm_k_setnam(buffer);
 	SetLoadSaveBank(0);
+	lastreadaddress = cbm_k_load(0,(unsigned int)projbuffer);
+    if(lastreadaddress<=(unsigned int)projbuffer) { return; }
+    charsetchanged[0]       = projbuffer[ 0];
+    charsetchanged[1]       = projbuffer[ 1];
+    screen_col              = projbuffer[ 2];
+    screen_row              = projbuffer[ 3];
+    screenwidth             = projbuffer[ 4]*256+projbuffer[ 5];
+    screenheight            = projbuffer[ 6]*256+projbuffer [7];
+    screentotal             = projbuffer[ 8]*256+projbuffer[ 9];
+    screenbackground        = projbuffer[10];
+    mc_mb_normal            = projbuffer[11];
+    mc_mb_select            = projbuffer[12];
+    mc_pd_normal            = projbuffer[13];
+    mc_pd_select            = projbuffer[14];
+    mc_menupopup            = projbuffer[15];
+    plotscreencode          = projbuffer[16];
+    plotcolor               = projbuffer[17];
+    plotreverse             = projbuffer[18];
+    plotunderline           = projbuffer[19];
+    plotblink               = projbuffer[20];
+    plotaltchar             = projbuffer[21];
 
-    if(error) { fileerrormessage(error,0); }
+    // Load screen
+    sprintf(buffer,"%s.scrn",filename);
+    lastreadaddress = VDC_LoadScreen(buffer,targetdevice,SCREENMAPBASE,1);
+    if(lastreadaddress>SCREENMAPBASE)
+    {
+        windowrestore(0);
+        VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+        windowsave(0,1,0);
+        menuplacebar();
+    }
+
+    // Load standard charset
+    if(charsetchanged[0]==1)
+    {
+        sprintf(buffer,"%s.chrs",filename);
+        VDC_LoadCharset(buffer,targetdevice,CHARSETNORMAL,1,1);
+    }
+
+    // Load standard charset
+    if(charsetchanged[1]==1)
+    {
+        sprintf(buffer,"%s.chra",filename);
+        VDC_LoadCharset(buffer,targetdevice,CHARSETALTERNATE,1,2);
+    }
 }
 
 void loadcharset(unsigned char stdoralt)
 {
     unsigned int lastreadaddress, charsetaddress;
   
-    chooseidandfilename("Load chararcter set");
+    chooseidandfilename("Load chararcter set",15);
 
     charsetaddress = (stdoralt==0)? CHARSETNORMAL : CHARSETALTERNATE;
 
@@ -1220,28 +1589,35 @@ void savecharset(unsigned char stdoralt)
     unsigned char error;
     unsigned int charsetaddress;
   
-    chooseidandfilename("Save chararcter set");
+    chooseidandfilename("Save chararcter set",15);
 
     charsetaddress = (stdoralt==0)? CHARSETNORMAL : CHARSETALTERNATE;
 
     windowrestore(0);
 
-    // Set device ID
-	cbm_k_setlfs(0, targetdevice, 0);
+    if(checkiffileexists(filename,targetdevice)==1)
+    {
+        // Scratch old file
+        sprintf(buffer,"s:%s",filename);
+        cmd(targetdevice,buffer);
 
-	// Set filename
-	cbm_k_setnam(filename);
+        // Set device ID
+	    cbm_k_setlfs(0, targetdevice, 0);
 
-	// Set bank
-	SetLoadSaveBank(1);
-	
-	// Load from file to memory
-	error = cbm_k_save(charsetaddress,charsetaddress+256*8);
+	    // Set filename
+	    cbm_k_setnam(filename);
 
-	// Restore I/O bank to 0
-	SetLoadSaveBank(0);
+	    // Set bank
+	    SetLoadSaveBank(1);
+    
+	    // Load from file to memory
+	    error = cbm_k_save(charsetaddress,charsetaddress+256*8);
 
-    if(error) { fileerrormessage(error,0); }
+	    // Restore I/O bank to 0
+	    SetLoadSaveBank(0);
+
+        if(error) { fileerrormessage(error,0); }
+    }
 }
 
 void mainmenuloop()
@@ -1286,6 +1662,14 @@ void mainmenuloop()
 
         case 22:
             loadscreenmap();
+            break;
+        
+        case 23:
+            saveproject();
+            break;
+        
+        case 24:
+            loadproject();
             break;
         
         case 31:
@@ -1359,11 +1743,41 @@ void main()
     // Initialise VDC screen and VDC assembly routines
     VDC_Init();
 
+    // Detect VDC memory size and set VDC memory config size to 64K if present
+    vdcmemory = VDC_DetectVDCMemSize();
+    if(vdcmemory==64)
+    {
+        VDC_SetExtendedVDCMemSize();                            // Enable VDC 64KB extended memory
+        clrscr();                                               // Clear screen to reset screen data
+        strcpy(pulldownmenutitles[3][3],"Undo: enabled  ");     // Enable undo menuoption
+        pulldownmenuoptions[3]=4;                               // Enable undo menupotion
+        undoenabled = 1;                                        // Set undo enabled flag
+        undoaddress = VDCEXTENDED;                // Reset undo address
+        undonumber = 0;                           // Reset undo number
+        undomaxnumber = 0;                        // Reset undo max number
+    }
+
+    // Copy charsets from ROM
+    VDC_CopyCharsetsfromROM();
+
+    // Load and show title screen
+    if(VDC_LoadScreen("vdcse.tscr",bootdevice,SCREENMAPBASE,1)>SCREENMAPBASE)
+    {
+        VDC_CopyMemToVDC(VDCBASETEXT,SCREENMAPBASE,1,4048);
+    }
+
     // Load system charset to bank 1
     VDC_LoadCharset("vdcse.sfon",bootdevice, CHARSETSYSTEM, 1, 2);
 
     // Clear screen map in bank 1 with spaces in text color white
     screenmapfill(CH_SPACE,VDC_WHITE);
+ 
+    // Wait for key press to start application
+    VDC_PrintAt(24,30,"Press key to start.",VDC_WHITE+VDC_A_ALTCHAR);
+    cgetc();
+
+    // Clear viewport of titlescreen
+    clrscr();
 
     // Main program loop
     VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
@@ -1469,12 +1883,17 @@ void main()
 
         // Line and box mode
         case 'l':
-            lineandbox();
+            lineandbox(1);
             break;
 
         // Move mode
         case 'm':
             movemode();
+            break;
+
+        // Select mode
+        case 's':
+            selectmode();
             break;
 
         // Plot present screencode and attribute

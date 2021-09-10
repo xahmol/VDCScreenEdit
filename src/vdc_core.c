@@ -17,6 +17,9 @@
 // DevDef: Commodore 128 Assembly - Part 3: The 80-column (8563) chip
 // https://devdef.blogspot.com/2018/03/commodore-128-assembly-part-3-80-column.html
 //
+// Tips and Tricks for C128: VDC
+// http://commodore128.mirkosoft.sk/vdc.html
+//
 // 6502.org: Practical Memory Move Routines
 // http://6502.org/source/general/memory_move.html
 //
@@ -83,6 +86,15 @@ unsigned char VDC_Peek(int address)
 	VDC_Peek_core();
 
 	/* Return value via VDC register 31 */
+	return VDC_value;
+}
+
+unsigned char VDC_DetectVDCMemSize()
+{
+	// Function to detect the VDC memory size
+	// Output: memorysize 16 or 64
+
+	VDC_DetectVDCMemSize_core();
 	return VDC_value;
 }
 
@@ -382,7 +394,7 @@ unsigned int VDC_LoadCharset(char* filename, unsigned char deviceid, unsigned in
 	// Redefine VDC charset if requested
 	if(length>source && stdoralt != 0)
 	{
-		baseaddress = (stdoralt == 1)? VDCCHARALT:VDCCHARALT;
+		baseaddress = (stdoralt == 1)? VDCCHARSTD:VDCCHARALT;
 		VDC_RedefineCharset(source, sourcebank, baseaddress, ((length-source)/8)-1);
 	}
 

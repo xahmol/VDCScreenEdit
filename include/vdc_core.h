@@ -11,13 +11,14 @@
 #ifndef _VDC_CORE_
 #define _VDC_CORE_
 
-/* VDC addressing */
+// VDC addressing
 #define VDCBASETEXT         0x0000      // Base address for text screen characters
 #define VDCBASEATTR         0x0800      // Base address for text screen attributes
 #define VDCSWAPTEXT         0x1000      // Base address for swap text screen characters
 #define VDCSWAPATTR         0x1800      // Base address for swap text screen attributes
 #define VDCCHARSTD          0x2000      // Base address for standard charset
 #define VDCCHARALT          0x3000      // Base address for alternate charset
+#define VDCEXTENDED         0x4000      // Base address of 64K VDC extended memory space
 
 // VDC color values
 #define VDC_BLACK	0
@@ -52,7 +53,7 @@ extern unsigned char vdctoconiocol[16];
 
 // Defines for MMU modes, MMU $FF00 configuration values
 #define MMU_BANK0               0x3e  // Bank 0 with full RAM apart from I/O area
-#define MMU_BANK1               0x7e  // Bank 1 with full RAM apart from I/O area
+#define MMU_BANK1               0x7e  // Bank 1 with full RAM apart from I/O area        
 
 // Defines for scroll directions
 #define SCROLL_LEFT             0x01
@@ -80,6 +81,9 @@ void VDC_ReadRegister_core();
 void VDC_WriteRegister_core();
 void VDC_Poke_core();
 void VDC_Peek_core();
+void VDC_DetectVDCMemSize_core();
+void VDC_SetExtendedVDCMemSize();
+void VDC_CopyCharsetsfromROM();
 void VDC_SetCursorMode_core();
 void VDC_MemCopy_core();
 void VDC_HChar_core();
@@ -100,8 +104,11 @@ void BankMemSet_core();
 // Function Prototypes
 unsigned char VDC_ReadRegister(unsigned char registeraddress);
 void VDC_WriteRegister(unsigned char registeraddress, unsigned char registervalue);
+unsigned char VDC_DetectVDCMemSize();
 void VDC_Poke(int address,  unsigned char value);
 unsigned char VDC_Peek(int address);
+unsigned char VDC_DetectVDCMemSize();
+void VDC_SetExtendedVDCMemSize();
 void VDC_SetCursorMode(unsigned char cursorMode);
 void VDC_MemCopy(unsigned int sourceaddr, unsigned int destaddr, unsigned int length);
 void VDC_HChar(unsigned char row, unsigned char col, unsigned char character, unsigned char length, unsigned char attribute);
