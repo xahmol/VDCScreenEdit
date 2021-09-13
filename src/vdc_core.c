@@ -9,7 +9,7 @@
 //
 // Scott Hutter - VDC Core functions inspiration:
 // https://github.com/Commodore64128/vdc_gui/blob/master/src/vdc_core.c
-// (used as starting point, but channged to inline assembler for core functions, added VDC wait statements and expanded)
+// (used as starting point, but changed to inline assembler for core functions, added VDC wait statements and expanded)
 //
 // Francesco Sblendorio - Screen Utility:
 // https://github.com/xlar54/ultimateii-dos-lib/blob/master/src/samples/screen_utility.c
@@ -184,11 +184,11 @@ void VDC_CopyVDCToMem(unsigned int vdcAddress, unsigned int memAddress, unsigned
 void VDC_RedefineCharset(unsigned int source, unsigned char sourcebank, unsigned int dest, unsigned char lengthinchars)
 {
 	// Function to copy charset definition from normal memory to VDC
-	// Input: Source normal memory adress where charset defiition resides,
+	// Input: Source normal memory address where charset defintion resides,
 	//		  Destination address in VDC memory,
 	//		  Numbers of characters to redefine.
 	// Takes charset definition of 8 bytes per character as input.
-	// Destination address should be the location pointed as chararter definition address
+	// Destination address should be the location pointed as character definition address
 
 	VDC_addrh = (source>>8) & 0xff;						// Obtain high byte of destination address
 	VDC_addrl = source & 0xff;							// Obtain low byte of destination address
@@ -226,7 +226,7 @@ void VDC_Init(void)
 
 	// Set 2 MHz mode
 	POKE(0xd011,PEEK(0xd011)&(~(1<<4)));	// Disable the 5th bit of the SCROLY register to blank VIC screen
-	POKE(0xd011,PEEK(0xd011)&(~(1<<7)));	// Disable the 8th bit of the SCROLY register to avoid accidentily setting raster interrupt to high
+	POKE(0xd011,PEEK(0xd011)&(~(1<<7)));	// Disable the 8th bit of the SCROLY register to avoid accidentally setting raster interrupt to high
 	set_c128_speed(SPEED_FAST);				// Set C128 speed to FAST (2 Mhz)
 	  
 	// Load $1300 area machine code
@@ -261,7 +261,7 @@ void VDC_Exit(void)
 {
 	set_c128_speed(SPEED_SLOW);         	// Switch back to 1Mhz mode for safe exit
 	POKE(0xd011,PEEK(0xd011)|(1<<4));		// Enable the 5th bit of the SCROLY register to blank VIC screen
-	POKE(0xd011,PEEK(0xd011)&(~(1<<7)));	// Disable the 8th bit of the SCROLY register to avoid accidentily setting raster interrupt to high
+	POKE(0xd011,PEEK(0xd011)&(~(1<<7)));	// Disable the 8th bit of the SCROLY register to avoid accidentally setting raster interrupt to high
 	POKE(0xd506,0x04);						// Set proper bits in $D506 MMU register for default shared memory
 	clrscr();
 }
@@ -341,6 +341,8 @@ unsigned char VDC_CursorAt(unsigned char row, unsigned char col)
 
 void VDC_SetCursorMode(unsigned char cursorMode)
 {
+	// Function to set the VDC cursor mode
+
 	VDC_value = cursorMode;
 	VDC_SetCursorMode_core();
 }
@@ -469,7 +471,7 @@ unsigned char VDC_Attribute(unsigned char textcolor, unsigned char blink, unsign
 
 void VDC_Plot(unsigned char row, unsigned char col, unsigned char screencode, unsigned char attribute)
 {
-	// Function to plot a screencodes at VDC screem
+	// Function to plot a screencodes at VDC screen
 	// Input: row and column, screencode to plot, attribute code
 
 	unsigned int address = VDC_RowColToAddress(row,col);
@@ -479,7 +481,7 @@ void VDC_Plot(unsigned char row, unsigned char col, unsigned char screencode, un
 
 void VDC_PlotString(unsigned char row, unsigned char col, char* plotstring, unsigned char length, unsigned char attribute)
 {
-	// Function to plot a string of screencodes at VDC screem, no trailing zero needed
+	// Function to plot a string of screencodes at VDC screen, no trailing zero needed
 	// Input: row and column, string to plot, length to plot, attribute code
 	
 	unsigned char x;
@@ -492,10 +494,10 @@ void VDC_PlotString(unsigned char row, unsigned char col, char* plotstring, unsi
 
 void VDC_CopyViewPortToVDC(unsigned int sourcebase, unsigned char sourcebank, unsigned int sourcewidth, unsigned int sourceheight, unsigned int sourcexoffset, unsigned int sourceyoffset, unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight )
 {
-	// Function to copy a vieuwport on the source screen map to the VDC
+	// Function to copy a viewport on the source screen map to the VDC
 	// Input:
 	// - Source:	sourcebase			= source base address in memory
-	//				sourcebak			= memory bank of source (0 or 1)
+	//				sourcebank			= memory bank of source (0 or 1)
 	//				sourcewidth			= number of characters per line in source screen map
 	//				sourceheight		= number of lines in source screen map
 	//				sourcexoffset		= horizontal offset on source screen map to start upper left corner of viewpoint
@@ -503,7 +505,7 @@ void VDC_CopyViewPortToVDC(unsigned int sourcebase, unsigned char sourcebank, un
 	// - Viewport:	xcoord				= x coordinate of viewport upper left corner
 	//				ycoord				= y coordinate of viewport upper left corner
 	//				viewwidth			= width of viewport in number of characters
-	//				viewheight			= heighh of viewport in number of lines
+	//				viewheight			= height of viewport in number of lines
 
 	// Charachters
 	unsigned int stride = sourcewidth - viewwidth;
@@ -516,7 +518,7 @@ void VDC_CopyViewPortToVDC(unsigned int sourcebase, unsigned char sourcebank, un
 	VDC_desth = (vdcbase>>8) & 0xff;					// Obtain high byte of destination address
 	VDC_destl = vdcbase & 0xff;							// Obtain low byte of destination address
 	VDC_strideh = (stride>>8) & 0xff;					// Obtain high byte of stride
-	VDC_stridel = stride & 0xff;						// Obatin low byte of stride
+	VDC_stridel = stride & 0xff;						// Obtain low byte of stride
 	VDC_tmp1 = --viewheight;							// Obtain number of lines to copy
 	VDC_tmp2 = --viewwidth;								// Obtain length of lines to copy
 	VDC_tmp3 = (sourcebank==0)? MMU_BANK0:MMU_BANK1;	// Set proper MMU config based on bank 0 or 1
@@ -539,10 +541,10 @@ void VDC_CopyViewPortToVDC(unsigned int sourcebase, unsigned char sourcebank, un
 
 void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned int sourcewidth, unsigned int sourceheight, unsigned int sourcexoffset, unsigned int sourceyoffset, unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight, unsigned char direction)
 {
-	// Function to scroll a vieuwport on the source screen map on the VDC in the given direction
+	// Function to scroll a viewport on the source screen map on the VDC in the given direction
 	// Input:
 	// - Source:	sourcebase			= source base address in memory
-	//				sourcebak			= memory bank of source (0 or 1)
+	//				sourcebank			= memory bank of source (0 or 1)
 	//				sourcewidth			= number of characters per line in source screen map
 	//				sourceheight		= number of lines in source screen map
 	//				sourcexoffset		= horizontal offset on source screen map to start upper left corner of viewpoint
@@ -550,7 +552,7 @@ void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned 
 	// - Viewport:	xcoord				= x coordinate of viewport upper left corner
 	//				ycoord				= y coordinate of viewport upper left corner
 	//				viewwidth			= width of viewport in number of characters
-	//				viewheight			= heighh of viewport in number of lines
+	//				viewheight			= height of viewport in number of lines
 	// - Direction:	direction			= Bit pattern for direction of scroll:
 	//									  bit 7 set ($01): Left
 	//									  bit 6 set ($02): right
@@ -647,12 +649,12 @@ void VDC_ScrollCopy(unsigned int sourcebase, unsigned char sourcebank, unsigned 
 
 void VDC_ScrollMove(unsigned char xcoord, unsigned char ycoord, unsigned char viewwidth, unsigned char viewheight, unsigned char direction)
 {
-	// Function to scroll a vieuwport without filling in the emptied row or column
+	// Function to scroll a viewport without filling in the emptied row or column
 	// Input:
 	// - Viewport:	xcoord				= x coordinate of viewport upper left corner
 	//				ycoord				= y coordinate of viewport upper left corner
 	//				viewwidth			= width of viewport in number of characters
-	//				viewheight			= heighh of viewport in number of lines
+	//				viewheight			= height of viewport in number of lines
 	// - Direction:	direction			= Bit pattern for direction of scroll:
 	//									  bit 7 set ($01): Left
 	//									  bit 6 set ($02): right
@@ -779,7 +781,7 @@ void BankMemSet(unsigned int source, unsigned char sourcebank, unsigned char val
 
 	VDC_addrh = (source>>8) & 0xff;						// Obtain high byte of source address
 	VDC_addrl = source & 0xff;							// Obtain low byte of source address
-	VDC_value = value;									// Onbtain value to set
+	VDC_value = value;									// Obtain value to set
 	VDC_tmp1 = ((length>>8) & 0xff);					// Obtain number of 256 byte pages to copy
 	VDC_tmp2 = length & 0xff;							// Obtain length in last page to copy
 	VDC_tmp3 = (sourcebank==0)? MMU_BANK0:MMU_BANK1;	// Set proper MMU config based on bank 0 or 1

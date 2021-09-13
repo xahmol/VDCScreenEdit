@@ -1,3 +1,55 @@
+/*
+VDC Screen Editor
+Screen editor for the C128 80 column mode
+Written in 2021 by Xander Mol
+
+https://github.com/xahmol/VDCScreenEdit
+https://www.idreamtin8bits.com/
+
+Code and resources from others used:
+
+-   CC65 cross compiler:
+    https://cc65.github.io/
+
+-   C128 Programmers Reference Guide: For the basic VDC register routines and VDC code inspiration
+    http://www.zimmers.net/anonftp/pub/cbm/manuals/c128/C128_Programmers_Reference_Guide.pdf
+
+-   Scott Hutter - VDC Core functions inspiration:
+    https://github.com/Commodore64128/vdc_gui/blob/master/src/vdc_core.c
+    (used as starting point, but changed to inline assembler for core functions, added VDC wait statements and expanded)
+
+-   Francesco Sblendorio - Screen Utility: used for inspiration:
+    https://github.com/xlar54/ultimateii-dos-lib/blob/master/src/samples/screen_utility.c
+
+-   DevDef: Commodore 128 Assembly - Part 3: The 80-column (8563) chip
+    https://devdef.blogspot.com/2018/03/commodore-128-assembly-part-3-80-column.html
+
+-   Tips and Tricks for C128: VDC
+    http://commodore128.mirkosoft.sk/vdc.html
+
+-   6502.org: Practical Memory Move Routines: Starting point for memory move routines
+    http://6502.org/source/general/memory_move.html
+
+-   DraBrowse source code for DOS Command and text input routine
+    DraBrowse (db*) is a simple file browser.
+    Originally created 2009 by Sascha Bader.
+    Used version adapted by Dirk Jagdmann (doj)
+    https://github.com/doj/dracopy
+
+-   Bart van Leeuwen: For inspiration and advice while coding.
+    Also for providing the excellent Device Manager ROM to make testing on real hardware very easy
+
+-   Original windowing system code on Commodore 128 by unknown author.
+   
+-   Tested using real hardware (C128D and C128DCR) plus VICE.
+
+The code can be used freely as long as you retain
+a notice describing original source and author.
+
+THE PROGRAMS ARE DISTRIBUTED IN THE HOPE THAT THEY WILL BE USEFUL,
+BUT WITHOUT ANY WARRANTY. USE THEM AT YOUR OWN RISK!
+*/
+
 //Includes
 #include <stdio.h>
 #include <string.h>
@@ -97,7 +149,7 @@ unsigned char plotreverse;
 unsigned char plotunderline;
 unsigned char plotblink;
 unsigned char plotaltchar;
-unsigned int select_startx, select_starty, select_endx, select_endy, select_width, select_heigth, select_accept;
+unsigned int select_startx, select_starty, select_endx, select_endy, select_width, select_height, select_accept;
 
 char buffer[81];
 char version[22];
@@ -105,41 +157,49 @@ char version[22];
 // Generic routines
 unsigned char dosCommand(const unsigned char lfn, const unsigned char drive, const unsigned char sec_addr, const char *cmd)
 {
-  int res;
-  if (cbm_open(lfn, drive, sec_addr, cmd) != 0)
+    // Send DOS command
+    // based on version DraCopy 1.0e, then modified.
+    // Created 2009 by Sascha Bader.
+
+    int res;
+    if (cbm_open(lfn, drive, sec_addr, cmd) != 0)
     {
-      return _oserror;
+        return _oserror;
     }
 
-  if (lfn != 15)
+    if (lfn != 15)
     {
-      if (cbm_open(15, drive, 15, "") != 0)
+        if (cbm_open(15, drive, 15, "") != 0)
         {
-          cbm_close(lfn);
-          return _oserror;
+            cbm_close(lfn);
+            return _oserror;
         }
     }
 
-  DOSstatus[0] = 0;
-  res = cbm_read(15, DOSstatus, sizeof(DOSstatus));
+    DOSstatus[0] = 0;
+    res = cbm_read(15, DOSstatus, sizeof(DOSstatus));
 
-  if(lfn != 15)
+    if(lfn != 15)
     {
       cbm_close(15);
     }
-  cbm_close(lfn);
+    cbm_close(lfn);
 
-  if (res < 1)
+    if (res < 1)
     {
-      return _oserror;
+        return _oserror;
     }
 
-  return (DOSstatus[0] - 48) * 10 + DOSstatus[1] - 48;
+    return (DOSstatus[0] - 48) * 10 + DOSstatus[1] - 48;
 }
 
 unsigned int cmd(const unsigned char device, const char *cmd)
 {
-  return dosCommand(15, device, 15, cmd);
+    // Prepare DOS command
+    // based on version DraCopy 1.0e, then modified.
+    // Created 2009 by Sascha Bader.
+    
+    return dosCommand(15, device, 15, cmd);
 }
 
 int textInput(unsigned char xpos, unsigned char ypos, char* str, unsigned char size)
@@ -290,7 +350,7 @@ void windowrestore(unsigned char restorealtcharset)
     // Restore attributes
     VDC_CopyMemToVDC(0x0800+(Window[windownumber].ypos*80),windowaddress+(Window[windownumber].height*80),1,Window[windownumber].height*80);
 
-    // Restore customn charset if needed
+    // Restore custom charset if needed
     if(restorealtcharset == 1 && charsetchanged[1] == 1)
     {
         VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
@@ -460,7 +520,7 @@ unsigned char menumain()
             xpos=menubarcoords[menubarchoice-1]-1;
             if(xpos+strlen(pulldownmenutitles[menubarchoice-1][0])>38)
             {
-                xpos=menubarcoords[menubarchoice-1]+strlen(menubartitles[menubarchoice-1])-strlen(pulldownmenutitles    [menubarchoice-1][0]);
+                xpos=menubarcoords[menubarchoice-1]+strlen(menubartitles[menubarchoice-1])-strlen(pulldownmenutitles  [menubarchoice-1][0]);
             }
             menuoptionchoice = menupulldown(xpos,1,menubarchoice,1);
             if(menuoptionchoice==18)
@@ -469,7 +529,7 @@ unsigned char menumain()
                 menubarchoice--;
                 if(menubarchoice<1)
                 {
-                        menubarchoice = menubaroptions;
+                    menubarchoice = menubaroptions;
                 }
             }
             if(menuoptionchoice==19)
@@ -485,7 +545,6 @@ unsigned char menumain()
         else
         {
             menuoptionchoice = 99;
-
         }
     } while (menuoptionchoice==0);
 
@@ -539,9 +598,11 @@ unsigned int screenmap_screenaddr(unsigned char row, unsigned char col, unsigned
     return SCREENMAPBASE+(row*width)+col;
 }
 
-unsigned int screenmap_attraddr(unsigned char row, unsigned char col, unsigned int width, unsigned int heigth)
+unsigned int screenmap_attraddr(unsigned char row, unsigned char col, unsigned int width, unsigned int height)
 {
-    return SCREENMAPBASE+(row*width)+col+(width*heigth)+48;
+    // Function to calculate screenmap address for the attribute space
+    // Input: row, col, width and height for screenmap
+    return SCREENMAPBASE+(row*width)+col+(width*height)+48;
 }
 
 void screenmapplot(unsigned char row, unsigned char col, unsigned char screencode, unsigned char attribute)
@@ -555,6 +616,8 @@ void screenmapplot(unsigned char row, unsigned char col, unsigned char screencod
 
 void placesignature()
 {
+    // Place signature in screenmap with program version
+
     char versiontext[49] = "";
     unsigned char x;
     unsigned int address = SCREENMAPBASE + (screenwidth*screenheight);
@@ -569,6 +632,8 @@ void placesignature()
 
 void screenmapfill(unsigned char screencode, unsigned char attribute)
 {
+    // Function to fill screen with the screencode and attribute code provided as input
+
     unsigned int address = SCREENMAPBASE;
     
     BankMemSet(address,1,screencode,screentotal+48);
@@ -579,6 +644,9 @@ void screenmapfill(unsigned char screencode, unsigned char attribute)
 
 void cursormove(unsigned char left, unsigned char right, unsigned char up, unsigned char down)
 {
+    // Move cursor and scroll screen if needed
+    // Input: flags to enable (1) or disable (0) move in the different directions
+
     if(left == 1 )
     {
         if(screen_col==0)
@@ -644,7 +712,8 @@ void cursormove(unsigned char left, unsigned char right, unsigned char up, unsig
 // Application routines
 void plotmove(direction)
 {
-    // Move cursor
+    // Drive cursor move
+    // Input: ASCII code of cursor key pressed
 
     VDC_Plot(screen_row,screen_col,PEEKB(screenmap_screenaddr(yoffset+screen_row,xoffset+screen_col,screenwidth),1),PEEKB(screenmap_attraddr(yoffset+screen_row,xoffset+screen_col,screenwidth,screenheight),1));
 
@@ -728,7 +797,6 @@ void writemode()
             if(isprint(key))
             {
                 screenmapplot(screen_row+yoffset,screen_col+xoffset,VDC_PetsciiToScreenCode(key),VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
-                //VDC_Plot(screen_row,screen_col,VDC_PetsciiToScreenCode(key),VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
                 plotmove(CH_CURS_RIGHT);
             }
             break;
@@ -811,6 +879,8 @@ void colorwrite()
 void plotvisible(unsigned char row, unsigned char col, unsigned char setorrestore)
 {
     // Plot or erase part of line or box if in visible viewport
+    // Input: row, column, and flag setorrestore to plot new value (1) or restore old value (0)
+
 
     if(row>=yoffset && row<=yoffset+24 && col>=xoffset && col<=xoffset+79)
     {
@@ -893,7 +963,7 @@ void lineandbox(unsigned char draworselect)
     } while (key!=CH_ESC && key != CH_ENTER);
 
     select_width = select_endx-select_startx+1;
-    select_heigth = select_endy-select_starty+1;
+    select_height = select_endy-select_starty+1;
 
     if(key==CH_ENTER && draworselect ==1)
     {
@@ -912,6 +982,8 @@ void lineandbox(unsigned char draworselect)
 
 void movemode()
 {
+    // Function to move the 80x25 viewport
+
     unsigned char key,y;
     unsigned char moved = 0;
 
@@ -972,7 +1044,9 @@ void movemode()
 
 void selectmode()
 {
-    unsigned char key,movekey,y;
+    // Function to select a screen area to delete, cut, copy or paint
+
+    unsigned char key,movekey,y,ycount;
 
     movekey = 0;
     lineandbox(0);
@@ -1014,25 +1088,28 @@ void selectmode()
 
             if(movekey==CH_ENTER)
             {
-                if((screen_col+xoffset+select_width>screenwidth) || (screen_row+yoffset+select_heigth>screenheight))
+                if((screen_col+xoffset+select_width>screenwidth) || (screen_row+yoffset+select_height>screenheight))
                 {
                     messagepopup("Selection does not fit.",1);
                     return;
                 }
 
-                for(y=0;y<select_heigth;y++)
+                for(ycount=0;ycount<select_height;ycount++)
                 {
+                    y=(screen_row+yoffset>=select_starty)? select_height-ycount-1 : ycount;
                     VDC_CopyMemToVDC(VDCSWAPTEXT,screenmap_screenaddr(select_starty+y,select_startx,screenwidth),1, select_width);
+                    if(key=='x') { BankMemSet(screenmap_screenaddr(select_starty+y,select_startx,screenwidth),1,CH_SPACE,select_width); }
                     VDC_CopyVDCToMem(VDCSWAPTEXT,screenmap_screenaddr(screen_row+yoffset+y,screen_col+xoffset,screenwidth),1,select_width);
                     VDC_CopyMemToVDC(VDCSWAPTEXT,screenmap_attraddr(select_starty+y,select_startx,screenwidth,  screenheight),1,select_width);
+                    if(key=='x') { BankMemSet(screenmap_attraddr(select_starty+y,select_startx,screenwidth,screenheight),1,VDC_WHITE,select_width); }
                     VDC_CopyVDCToMem(VDCSWAPTEXT,screenmap_attraddr(screen_row+yoffset+y,screen_col+xoffset,screenwidth,  screenheight),1,select_width);
                 }
             }
         }
 
-        if((key=='d' || key=='x')&& movekey!=CH_ESC)
+        if((key=='d')&& movekey!=CH_ESC)
         {
-            for(y=0;y<select_heigth;y++)
+            for(y=0;y<select_height;y++)
             {
                 BankMemSet(screenmap_screenaddr(select_starty+y,select_startx,screenwidth),1,CH_SPACE,select_width);
                 BankMemSet(screenmap_attraddr(select_starty+y,select_startx,screenwidth,screenheight),1,VDC_WHITE,select_width);
@@ -1041,7 +1118,7 @@ void selectmode()
 
         if(key=='p')
         {
-            for(y=0;y<select_heigth;y++)
+            for(y=0;y<select_height;y++)
             {
                 BankMemSet(screenmap_attraddr(select_starty+y,select_startx,screenwidth,screenheight),1,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar),select_width);
             }
@@ -1052,6 +1129,8 @@ void selectmode()
 
 void resizewidth()
 {
+    // Function to resize screen canvas width
+
     unsigned int newwidth = screenwidth;
     unsigned int maxsize = MEMORYLIMIT - SCREENMAPBASE;
     unsigned char areyousure = 0;
@@ -1130,6 +1209,8 @@ void resizewidth()
 
 void resizeheight()
 {
+    // Function to resize screen camvas height
+
     unsigned int newheight = screenheight;
     unsigned int maxsize = MEMORYLIMIT - SCREENMAPBASE;
     unsigned char areyousure = 0;
@@ -1193,6 +1274,8 @@ void resizeheight()
 
 void changebackgroundcolor()
 {
+    // Function to change background color
+
     unsigned char key;
     unsigned char newcolor = screenbackground;
     unsigned char changed = 0;
@@ -1290,6 +1373,9 @@ void changebackgroundcolor()
 
 void chooseidandfilename(char* headertext, unsigned char maxlen)
 {
+    // Function to present dialogue to enter device id and filename
+    // Input: Headertext to print, maximum length of filename input string
+
     unsigned char newtargetdevice;
     unsigned char valid = 0;
     char* ptrend;
@@ -1341,7 +1427,9 @@ unsigned char checkiffileexists(char* filetocheck, unsigned char id)
 
 void loadscreenmap()
 {
-    unsigned int lastreadaddress, newwidth, newheigth;
+    // Function to load screenmap
+
+    unsigned int lastreadaddress, newwidth, newheight;
     unsigned int maxsize = MEMORYLIMIT - SCREENMAPBASE;
     char* ptrend;
   
@@ -1352,12 +1440,12 @@ void loadscreenmap()
     textInput(21,13,buffer,4);
     newwidth = (unsigned int)strtol(buffer,&ptrend,10);
 
-    VDC_PrintAt(14,21,"Enter screen heigth:",mc_menupopup);
+    VDC_PrintAt(14,21,"Enter screen height:",mc_menupopup);
     sprintf(buffer,"%i",screenheight);
     textInput(21,15,buffer,4);
-    newheigth = (unsigned int)strtol(buffer,&ptrend,10);
+    newheight = (unsigned int)strtol(buffer,&ptrend,10);
 
-    if((newwidth*newheigth*2) + 48 > maxsize || newwidth<80 || newheigth<25)
+    if((newwidth*newheight*2) + 48 > maxsize || newwidth<80 || newheight<25)
     {
         VDC_PrintAt(16,21,"New size unsupported. Press key.",mc_menupopup);
         cgetc();
@@ -1373,7 +1461,7 @@ void loadscreenmap()
         {
             windowrestore(0);
             screenwidth = newwidth;
-            screenheight = newheigth;
+            screenheight = newheight;
             VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
             windowsave(0,1,0);
             menuplacebar();
@@ -1383,6 +1471,8 @@ void loadscreenmap()
 
 void savescreenmap()
 {
+    // Function to save screenmap
+
     unsigned char error;
   
     chooseidandfilename("Save screen",15);
@@ -1416,6 +1506,8 @@ void savescreenmap()
 
 void saveproject()
 {
+    // Function to save project (screen, charsets and metadata)
+
     unsigned char error;
     unsigned char projbuffer[22];
 
@@ -1502,6 +1594,8 @@ void saveproject()
 
 void loadproject()
 {
+    // Function to load project (screen, charsets and metadata)
+
     unsigned int lastreadaddress;
     unsigned char projbuffer[22];
 
@@ -1564,9 +1658,12 @@ void loadproject()
 
 void loadcharset(unsigned char stdoralt)
 {
+    // Function to load charset
+    // Input: stdoralt: standard charset (0) or alternate charset (1)
+
     unsigned int lastreadaddress, charsetaddress;
   
-    chooseidandfilename("Load chararcter set",15);
+    chooseidandfilename("Load character set",15);
 
     charsetaddress = (stdoralt==0)? CHARSETNORMAL : CHARSETALTERNATE;
 
@@ -1586,10 +1683,13 @@ void loadcharset(unsigned char stdoralt)
 
 void savecharset(unsigned char stdoralt)
 {
+    // Function to save charset
+    // Input: stdoralt: standard charset (0) or alternate charset (1)
+
     unsigned char error;
     unsigned int charsetaddress;
   
-    chooseidandfilename("Save chararcter set",15);
+    chooseidandfilename("Save character set",15);
 
     charsetaddress = (stdoralt==0)? CHARSETNORMAL : CHARSETALTERNATE;
 
@@ -1622,6 +1722,8 @@ void savecharset(unsigned char stdoralt)
 
 void mainmenuloop()
 {
+    // Function for main menu selection loop
+
     unsigned char menuchoice;
     
     windowsave(0,1,1);
@@ -1705,6 +1807,8 @@ void mainmenuloop()
 
 void main()
 {
+    // Main application initialization, loop and exit
+    
     unsigned char key, newval;
 
     // Reset startvalues global variables
@@ -1767,7 +1871,7 @@ void main()
     }
 
     // Load system charset to bank 1
-    VDC_LoadCharset("vdcse.sfon",bootdevice, CHARSETSYSTEM, 1, 2);
+    VDC_LoadCharset("vdcse.sfon",bootdevice, CHARSETSYSTEM, 1, 0);
 
     // Clear screen map in bank 1 with spaces in text color white
     screenmapfill(CH_SPACE,VDC_WHITE);
