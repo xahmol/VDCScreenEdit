@@ -231,6 +231,7 @@ int textInput(unsigned char xpos, unsigned char ypos, char* str, unsigned char s
         switch (c)
         {
         case CH_ESC:
+        case CH_STOP:
             cursor(0);
             return -1;
 
@@ -417,11 +418,12 @@ unsigned char menupulldown(unsigned char xpos, unsigned char ypos, unsigned char
         do
         {
             key = cgetc();
-        } while (key != CH_ENTER && key != CH_CURS_LEFT && key != CH_CURS_RIGHT && key != CH_CURS_UP && key != CH_CURS_DOWN && key != CH_ESC);
+        } while (key != CH_ENTER && key != CH_CURS_LEFT && key != CH_CURS_RIGHT && key != CH_CURS_UP && key != CH_CURS_DOWN && key != CH_ESC && key != CH_STOP );
 
         switch (key)
         {
         case CH_ESC:
+        case CH_STOP:
             if(escapable == 1) { exit = 1; menuchoice = 0; }
             break;
 
@@ -492,7 +494,7 @@ unsigned char menumain()
             do
             {
                 key = cgetc();
-            } while (key != CH_ENTER && key != CH_CURS_LEFT && key != CH_CURS_RIGHT && key != CH_ESC);
+            } while (key != CH_ENTER && key != CH_CURS_LEFT && key != CH_CURS_RIGHT && key != CH_ESC && key != CH_STOP);
 
             VDC_Plot(0,menubarcoords[menubarchoice-1]-1,CH_SPACE,mc_mb_normal);
             VDC_PrintAt(0,menubarcoords[menubarchoice-1],menubartitles[menubarchoice-1],mc_mb_normal);
@@ -514,8 +516,8 @@ unsigned char menumain()
                     menubarchoice = 1;
                 }
             }
-        } while (key!=CH_ENTER && key != CH_ESC);
-        if (key != CH_ESC)
+        } while (key!=CH_ENTER && key != CH_ESC && key != CH_STOP);
+        if (key != CH_ESC && key != CH_STOP)
             {
             xpos=menubarcoords[menubarchoice-1]-1;
             if(xpos+strlen(pulldownmenutitles[menubarchoice-1][0])>38)
@@ -961,7 +963,7 @@ void writemode()
             }
             break;
         }
-    } while (key != CH_ESC);
+    } while (key != CH_ESC && key != CH_STOP);
 }
 
 void colorwrite()
@@ -991,6 +993,7 @@ void colorwrite()
         // Toggle blink
         case CH_F1:
             attribute ^= 0x10;           // Toggle bit 4 for blink
+            if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
             POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
             plotmove(CH_CURS_RIGHT);
             break;
@@ -998,6 +1001,7 @@ void colorwrite()
         // Toggle underline
         case CH_F3:
             attribute ^= 0x20;           // Toggle bit 5 for underline
+            if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
             POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
             plotmove(CH_CURS_RIGHT);
             break;
@@ -1005,12 +1009,14 @@ void colorwrite()
         // Toggle reverse
         case CH_F5:
             attribute ^= 0x40;           // Toggle bit 6 for reverse
+            if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
             POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
             plotmove(CH_CURS_RIGHT);
 
         // Toggle alternate character set
         case CH_F7:
             attribute ^= 0x80;           // Toggle bit 7 for alternate charset
+            if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
             POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
             plotmove(CH_CURS_RIGHT);
             break;            
@@ -1021,6 +1027,7 @@ void colorwrite()
             {
                 attribute &= 0xf0;                  // Erase bits 0-3
                 attribute += (key -48);             // Add color 0-9 with key 0-9
+                if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
                 POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
                 plotmove(CH_CURS_RIGHT);
             }
@@ -1028,12 +1035,13 @@ void colorwrite()
             {
                 attribute &= 0xf0;                  // Erase bits 0-3
                 attribute += (key -55);             // Add color 10-15 with key A-F
+                if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
                 POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
                 plotmove(CH_CURS_RIGHT);
             }
             break;
         }
-    } while (key != CH_ESC);
+    } while (key != CH_ESC && key != CH_STOP);
 }
 
 void plotvisible(unsigned char row, unsigned char col, unsigned char setorrestore)
@@ -1120,7 +1128,7 @@ void lineandbox(unsigned char draworselect)
         default:
             break;
         }
-    } while (key!=CH_ESC && key != CH_ENTER);
+    } while (key!=CH_ESC && key != CH_STOP && key != CH_ENTER);
 
     if(key==CH_ENTER)
     {
@@ -1153,6 +1161,8 @@ void movemode()
 
     cursor(0);
     VDC_Plot(screen_row,screen_col,PEEKB(screenmap_screenaddr(yoffset+screen_row,xoffset+screen_col,screenwidth),1),PEEKB(screenmap_attraddr(yoffset+screen_row,xoffset+screen_col,screenwidth,screenheight),1));
+
+    if(undoenabled == 1) { undo_new(0,0,80,25); }
 
     do
     {
@@ -1187,7 +1197,7 @@ void movemode()
         default:
             break;
         }
-    } while (key != CH_ENTER && key != CH_ESC);
+    } while (key != CH_ENTER && key != CH_ESC && key != CH_STOP);
 
     if(moved==1)
     {
@@ -1200,6 +1210,10 @@ void movemode()
             }
         }
         VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+    }
+    else
+    {
+        if(undoenabled == 1) { undo_escapeundo(); }
     }
 
     cursor(1);
@@ -1219,9 +1233,9 @@ void selectmode()
     do
     {
         key=cgetc();
-    } while (key !='d' && key !='x' && key !='c' && key != 'p' && key != CH_ESC );
+    } while (key !='d' && key !='x' && key !='c' && key != 'p' && key != CH_ESC && key != CH_STOP );
 
-    if(key!=CH_ESC)
+    if(key!=CH_ESC && key != CH_STOP)
     {
         if((key=='x' || key=='c')&&(select_width>4096))
         {
@@ -1248,7 +1262,7 @@ void selectmode()
                 default:
                     break;
                 }
-            } while (movekey != CH_ESC && movekey != CH_ENTER);
+            } while (movekey != CH_ESC && movekey != CH_STOP && movekey != CH_ENTER);
 
             if(movekey==CH_ENTER)
             {
@@ -1271,7 +1285,7 @@ void selectmode()
             }
         }
 
-        if((key=='d')&& movekey!=CH_ESC)
+        if( key=='d' && movekey!=CH_ESC && movekey != CH_STOP)
         {
             for(y=0;y<select_height;y++)
             {
@@ -1372,6 +1386,7 @@ void resizewidth()
         VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
         sprintf(pulldownmenutitles[0][0],"Width:   %5i ",screenwidth);
         menuplacebar();
+        undo_undopossible=0;
     }
 }
 
@@ -1437,6 +1452,7 @@ void resizeheight()
         VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
         sprintf(pulldownmenutitles[0][1],"Height:  %5i ",screenheight);
         menuplacebar();
+        undo_undopossible=0;
     }
 }
 
@@ -1464,7 +1480,7 @@ void changebackgroundcolor()
         do
         {
             key = cgetc();
-        } while (key != CH_ENTER && key != CH_ESC && key != '+' && key != '-');
+        } while (key != CH_ENTER && key != CH_ESC && key !=CH_STOP && key != '+' && key != '-');
 
         switch (key)
         {
@@ -1480,6 +1496,7 @@ void changebackgroundcolor()
             break;
         
         case CH_ESC:
+        case CH_STOP:
             changed=0;
             VDC_BackColor(screenbackground);
             break;
@@ -1494,7 +1511,7 @@ void changebackgroundcolor()
             sprintf(buffer,"Color: %2i",newcolor);
             VDC_PrintAt(8,21,buffer,mc_menupopup);
         }
-    } while (key != CH_ENTER && key != CH_ESC);
+    } while (key != CH_ENTER && key != CH_ESC && key != CH_STOP );
     
     if(changed=1)
     {
@@ -1633,6 +1650,7 @@ void loadscreenmap()
             VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
             windowsave(0,1,0);
             menuplacebar();
+            undo_undopossible=0;
         }
     }
 }
@@ -1807,6 +1825,7 @@ void loadproject()
         VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
         windowsave(0,1,0);
         menuplacebar();
+        undo_undopossible=0;
     }
 
     // Load standard charset
@@ -1888,6 +1907,31 @@ void savecharset(unsigned char stdoralt)
     }
 }
 
+void versioninfo()
+{
+    windownew(5,5,15,60,1);
+    VDC_PrintAt(6,6,"Version information and credits",mc_menupopup+VDC_A_UNDERLINE);
+    VDC_PrintAt(8,6,"VDC Screen Editor",mc_menupopup);
+    VDC_PrintAt(9,6,"Written in 2021 by Xander Mol",mc_menupopup);
+    sprintf(buffer,"Version: %s",version);
+    VDC_PrintAt(11,6,buffer,mc_menupopup);
+    VDC_PrintAt(13,6,"Full source code, documentation and credits at:",mc_menupopup);
+    VDC_PrintAt(14,6,"https://github.com/xahmol/VDCScreenEdit",mc_menupopup);
+    VDC_PrintAt(16,6,"(C) 2021, IDreamtIn8Bits.com",mc_menupopup);
+    VDC_PrintAt(18,6,"Press a key to continue.",mc_menupopup);
+    cgetc();
+    windowrestore(1);
+}
+
+void helpscreen()
+{
+    windownew(5,5,15,70,1);
+    VDC_PrintAt(6,6,"Help",mc_menupopup+VDC_A_UNDERLINE);
+    VDC_PrintAt(18,6,"Press a key to continue.",mc_menupopup);
+    cgetc();
+    windowrestore(1);
+}
+
 void mainmenuloop()
 {
     // Function for main menu selection loop
@@ -1915,14 +1959,20 @@ void mainmenuloop()
             break;
 
         case 14:
+            if(undoenabled == 1) { undo_new(0,0,screenwidth,screenheight); }
             screenmapfill(CH_SPACE,VDC_WHITE);
+            windowrestore(0);
             VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+            windowsave(0,1,0);
             menuplacebar();
             break;
         
         case 15:
+            if(undoenabled == 1) { undo_new(0,0,screenwidth,screenheight); }
             screenmapfill(plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+            windowrestore(0);
             VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+            windowsave(0,1,0);
             menuplacebar();
             break;
 
@@ -1958,9 +2008,25 @@ void mainmenuloop()
             savecharset(1);
             break;
 
+        case 41:
+            versioninfo();
+            break;
+
+        case 42:
+            helpscreen();
+            break;
+
         case 43:
             appexit = 1;
             menuchoice = 99;
+            break;
+        
+        case 44:
+            undoenabled = (undoenabled==0)? 1:0;
+            sprintf(pulldownmenutitles[3][3],"Undo: %s",(undoenabled==1)? "Enabled  ":"Disabled ");
+            undoaddress = VDCEXTENDED;                              // Reset undo address
+            undonumber = 0;                                         // Reset undo number
+            undo_undopossible = 0;                                  // Reset undo possible flag
             break;
 
         default:
@@ -2183,6 +2249,7 @@ void main()
 
         // Delete present screencode and attributes
         case CH_DEL:
+            if(undoenabled==1) { undo_new(screen_row,screen_col,1,1); }
             screenmapplot(screen_row,screen_col,CH_SPACE,VDC_WHITE);
             break;
 
