@@ -1224,7 +1224,7 @@ void selectmode()
 {
     // Function to select a screen area to delete, cut, copy or paint
 
-    unsigned char key,movekey,x,y,ycount,oldattr;
+    unsigned char key,movekey,x,y,ycount;
 
     movekey = 0;
     lineandbox(0);
