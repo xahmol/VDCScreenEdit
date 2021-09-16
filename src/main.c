@@ -1224,7 +1224,7 @@ void selectmode()
 {
     // Function to select a screen area to delete, cut, copy or paint
 
-    unsigned char key,movekey,y,ycount;
+    unsigned char key,movekey,x,y,ycount,oldattr;
 
     movekey = 0;
     lineandbox(0);
@@ -1233,7 +1233,7 @@ void selectmode()
     do
     {
         key=cgetc();
-    } while (key !='d' && key !='x' && key !='c' && key != 'p' && key != CH_ESC && key != CH_STOP );
+    } while (key !='d' && key !='x' && key !='c' && key != 'p' && key !='a' && key != CH_ESC && key != CH_STOP );
 
     if(key!=CH_ESC && key != CH_STOP)
     {
@@ -1294,13 +1294,25 @@ void selectmode()
             }
         }
 
-        if(key=='p')
+        if(key=='a')
         {
             for(y=0;y<select_height;y++)
             {
                 BankMemSet(screenmap_attraddr(select_starty+y,select_startx,screenwidth,screenheight),1,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar),select_width);
             }
         }
+
+        if(key=='p')
+        {
+            for(y=0;y<select_height;y++)
+            {
+                for(x=0;x<select_width;x++)
+                {
+                    POKEB(screenmap_attraddr(select_starty+y,select_startx+x,screenwidth,screenheight),1,(PEEKB(screenmap_attraddr(select_starty+y,select_startx+x,screenwidth,screenheight),1) & 0xf0)+plotcolor);
+                }
+            }
+        }
+
         VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
     }
     else
