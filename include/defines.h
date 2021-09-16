@@ -15,6 +15,25 @@
 
 /* Char defines */
 #define CH_SPACE            32          // Screencode for space
+#define CH_BLACK            144         // Petscii control code for black           CTRL-1
+#define CH_WHITE            5           // Petscii control code for white           CTRL-2
+#define CH_DRED             28          // Petscii control code for dark red        CTRL-3
+#define CH_LCYAN            159         // Petscii control code for light cyan      CTRL-4
+#define CH_LPURPLE          156         // Petscii control code for light purple    CTRL-5
+#define CH_DGREEN           30          // Petscii control code for dark green      CTRL-6
+#define CH_DBLUE            31          // Petscii control code for dark blue       CTRL-7
+#define CH_LYELLOW          158         // Petscii control code for light yellow    CTRL-8
+#define CH_RVSON            18          // Petscii control code for RVS ON          CTRL-9
+#define CH_RVSOFF           146         // Petscii control code for RVS OFF         CTRL-0
+#define CH_DPURPLE          129         // Petscii control code for dark purple     C=-1
+#define CH_DYELLOW          149         // Petscii control code for dark yellow     C=-2
+#define CH_LRED             150         // Petscii control code for light red       C=-3
+#define CH_DCYAN            151         // Petscii control code for dark cyan       C=-4
+#define CH_DGREY            152         // Petscii control code for dark grey       C=-5
+#define CH_LGREEN           153         // Petscii control code for light green     C=-6
+#define CH_LBLUE            154         // Petscii control code for light blue      C=-7
+#define CH_LGREY            155         // Petscii control code for light grey      C=-8
+
 
 /* Declaration global variables as externals */
 extern unsigned char bootdevice;

@@ -234,7 +234,7 @@ void VDC_Init(void)
 
 	if(r == 0)
 	{
-		r = cbm_read(2, MACOSTART, MACOSIZE);
+		r = cbm_read(2, (unsigned int*) MACOSTART, MACOSIZE);
 
 		cbm_close(2);
 
@@ -273,8 +273,8 @@ unsigned char VDC_PetsciiToScreenCode(unsigned char p)
 	else if (p > 63  && p < 96 ) p = p - 64;
 	else if (p > 95  && p < 128) p = p - 32;
 	else if (p > 127 && p < 160) p = p + 64;
-	else if (p > 161 && p < 192) p = p - 64;
-	else if (p > 191 && p < 254) p = p - 128;
+	else if (p > 159 && p < 192) p = p - 64;
+	else if (p > 191 && p < 255) p = p - 128;
 	else if (p == 255) p = 94;
 	
 	return p;
@@ -286,11 +286,10 @@ unsigned char VDC_PetsciiToScreenCodeRvs(unsigned char p)
 	if(p <32)	p = p + 128;
 	else if (p > 31  && p < 64 ) p = p + 128;
 	else if (p > 63  && p < 96 ) p = p + 64;
-	else if (p > 95  && p < 128) p = p - 32;
-	else if (p > 127 && p < 160) p = p + 64;
-	else if (p > 161 && p < 192) p = p - 64;
-	else if (p > 191 && p < 224) p = p - 128;
-	else if (p > 223 && p < 255) p = p - 128;
+	else if (p > 95  && p < 128) p = p + 96;
+	else if (p > 127 && p < 160) p = p -128;
+	else if (p > 159 && p < 192) p = p + 64;
+	else if (p > 191 && p < 255) p = p;
 	else if (p == 255) p = 94;
 
 	return p;

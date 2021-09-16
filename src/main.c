@@ -107,9 +107,9 @@ char pulldownmenutitles[5][5][16] = {
 // Undo data
 unsigned char vdcmemory;
 unsigned char undoenabled = 0;
-unsigned char undoaddress;
+unsigned int undoaddress;
 unsigned char undonumber;
-unsigned char undomaxnumber;
+unsigned char undo_undopossible;
 struct UndoStruct
 {
     unsigned int address;
@@ -118,7 +118,7 @@ struct UndoStruct
     unsigned char height;
     unsigned char width;
 };
-struct UndoStruct Undo[10];
+struct UndoStruct Undo[41];
 
 // Menucolors
 unsigned char mc_mb_normal = VDC_LGREEN + VDC_A_REVERSE + VDC_A_ALTCHAR;
@@ -709,6 +709,77 @@ void cursormove(unsigned char left, unsigned char right, unsigned char up, unsig
     }
 }
 
+// Functions for undo system
+
+void undo_new(unsigned char row, unsigned char col, unsigned char width, unsigned char height)
+{
+    // Function to create a new undo buffer position
+
+    unsigned char y;
+
+    undo_undopossible=1;
+    undonumber++;
+    //gotoxy(0,23);
+    //cprintf("UA: %4X UN: %u Row: %u Col: %u Wi: %u He: %u      ",undoaddress,undonumber,row,col,width,height);
+    if(undonumber>40) { undonumber=1;}
+    if(undoaddress+(width*height*2)<undoaddress) { undonumber = 1; }
+    for(y=0;y<height;y++)
+    {
+        VDC_CopyMemToVDC(undoaddress+(y*width),screenmap_screenaddr(row+y,col,screenwidth),1,width);
+        VDC_CopyMemToVDC(undoaddress+(width*height)+(y*width),screenmap_attraddr(row+y,col,screenwidth,screenheight),1,width);
+    }
+    Undo[undonumber-1].address = undoaddress;
+    if(undonumber<40) { Undo[undonumber].address = 0; } else { Undo[0].address = 0; }
+    Undo[undonumber-1].xstart = col;
+    Undo[undonumber-1].ystart = row;
+    Undo[undonumber-1].width = width;
+    Undo[undonumber-1].height = height;
+    undoaddress += width*height*2;
+}
+
+void undo_performundo()
+{
+    // Function to perform an undo if a filled undo slot is present
+
+    unsigned char y, row, col, width, height;
+
+    if(undo_undopossible==1)
+    {
+        row = Undo[undonumber-1].ystart;
+        col = Undo[undonumber-1].xstart;
+        width = Undo[undonumber-1].width;
+        height = Undo[undonumber-1].height;
+        for(y=0;y<height;y++)
+        {
+            VDC_CopyVDCToMem(Undo[undonumber-1].address+(y*width),screenmap_screenaddr(row+y,col,screenwidth),1,width);
+            VDC_CopyVDCToMem(Undo[undonumber-1].address+(width*height)+(y*width),screenmap_attraddr(row+y,col,screenwidth,screenheight),1,width);
+        }
+        VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+        //gotoxy(0,23);
+        //cprintf("UN: %u UA: %4X ",undonumber,Undo[undonumber-1].address);
+        undoaddress = Undo[undonumber-1].address;   
+        undonumber--;
+        if(undonumber==0)
+        {
+            if(Undo[39].address>0) { undonumber=40; }
+        }    
+        undo_undopossible=0;
+        if(undonumber>0 && Undo[undonumber-1].address>0) { undo_undopossible=1; }
+        if(undonumber==0 && Undo[39].address>0) { undo_undopossible=1; }
+        //cprintf("NN: %u NA: %4X UP: %u    ", undonumber,Undo[undonumber-1].address,undo_undopossible);
+    }
+}
+
+void undo_escapeundo()
+{
+    Undo[undonumber].address = 0;
+    undonumber--;
+    if(undonumber==0)
+    {
+        if(Undo[39].address>0) { undonumber=40; }
+    }  
+}
+
 // Application routines
 void plotmove(direction)
 {
@@ -742,11 +813,19 @@ void plotmove(direction)
     VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
 }
 
+void change_plotcolor(unsigned char newval)
+{
+    plotcolor=newval;
+    textcolor(vdctoconiocol[plotcolor]);
+    VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+}
+
 void writemode()
 {
     // Write mode with screencodes
 
-    unsigned char key;
+    unsigned char key, screencode;
+    unsigned char rvs = 0;
 
     do
     {
@@ -792,11 +871,92 @@ void writemode()
             VDC_Plot(screen_row,screen_col,CH_SPACE,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
             break;
 
+        // Perform undo
+        case CH_F2:
+            if(undoenabled==1 && undo_undopossible==1) { undo_performundo(); }
+            break;
+
+        // Toggle RVS with the RVS ON and RVS OFF keys (control 9 and control 0)
+        case CH_RVSON:
+            rvs = 1;
+            break;
+        
+        case CH_RVSOFF:
+            rvs = 0;
+            break;
+
+        // Color control with Control and Commodore keys plus 0-9 key
+        case CH_BLACK:
+            change_plotcolor(VDC_BLACK);
+            break;
+        
+        case CH_WHITE:
+            change_plotcolor(VDC_WHITE);
+            break;
+        
+        case CH_DRED:
+            change_plotcolor(VDC_DRED);
+            break;
+
+        case CH_LCYAN:
+            change_plotcolor(VDC_LCYAN);
+            break;
+
+        case CH_LPURPLE:
+            change_plotcolor(VDC_LPURPLE);
+            break;
+
+        case CH_DGREEN:
+            change_plotcolor(VDC_DGREEN);
+            break;
+
+        case CH_DBLUE:
+            change_plotcolor(VDC_DBLUE);
+            break;
+
+        case CH_LYELLOW:
+            change_plotcolor(VDC_LYELLOW);
+            break;
+
+        case CH_DPURPLE:
+            change_plotcolor(VDC_DPURPLE);
+            break;
+
+        case CH_DYELLOW:
+            change_plotcolor(VDC_DYELLOW);
+            break;
+            
+        case CH_LRED:
+            change_plotcolor(VDC_LRED);
+            break;
+
+        case CH_DCYAN:
+            change_plotcolor(VDC_DCYAN);
+            break;
+
+        case CH_DGREY:
+            change_plotcolor(VDC_DGREY);
+            break;
+
+        case CH_LGREEN:
+            change_plotcolor(VDC_LGREEN);
+            break;
+
+        case CH_LBLUE:
+            change_plotcolor(VDC_LBLUE);
+            break;
+
+        case CH_LGREY:
+            change_plotcolor(VDC_LGREY);
+            break;
+
         // Write printable character                
         default:
             if(isprint(key))
             {
-                screenmapplot(screen_row+yoffset,screen_col+xoffset,VDC_PetsciiToScreenCode(key),VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+                if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
+                if(rvs==0) { screencode = VDC_PetsciiToScreenCode(key); } else { screencode = VDC_PetsciiToScreenCodeRvs(key); }
+                screenmapplot(screen_row+yoffset,screen_col+xoffset,screencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
                 plotmove(CH_CURS_RIGHT);
             }
             break;
@@ -962,8 +1122,12 @@ void lineandbox(unsigned char draworselect)
         }
     } while (key!=CH_ESC && key != CH_ENTER);
 
-    select_width = select_endx-select_startx+1;
-    select_height = select_endy-select_starty+1;
+    if(key==CH_ENTER)
+    {
+        select_width = select_endx-select_startx+1;
+        select_height = select_endy-select_starty+1;
+        undo_new(select_starty,select_startx,select_width,select_height);
+    }  
 
     if(key==CH_ENTER && draworselect ==1)
     {
@@ -1124,6 +1288,10 @@ void selectmode()
             }
         }
         VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+    }
+    else
+    {
+        undo_escapeundo();
     }
 }
 
@@ -1853,12 +2021,12 @@ void main()
     {
         VDC_SetExtendedVDCMemSize();                            // Enable VDC 64KB extended memory
         clrscr();                                               // Clear screen to reset screen data
-        strcpy(pulldownmenutitles[3][3],"Undo: enabled  ");     // Enable undo menuoption
+        strcpy(pulldownmenutitles[3][3],"Undo: Enabled  ");     // Enable undo menuoption
         pulldownmenuoptions[3]=4;                               // Enable undo menupotion
         undoenabled = 1;                                        // Set undo enabled flag
-        undoaddress = VDCEXTENDED;                // Reset undo address
-        undonumber = 0;                           // Reset undo number
-        undomaxnumber = 0;                        // Reset undo max number
+        undoaddress = VDCEXTENDED;                              // Reset undo address
+        undonumber = 0;                                         // Reset undo number
+        undo_undopossible = 0;                                  // Reset undo possible flag
     }
 
     // Copy charsets from ROM
@@ -1921,9 +2089,7 @@ void main()
             {
                 if(newval==0) { newval = 15; } else { newval--; }
             }
-            plotcolor=newval;
-            textcolor(vdctoconiocol[plotcolor]);
-            VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+            change_plotcolor(newval);
             break;
 
         // Increase color
@@ -1933,9 +2099,7 @@ void main()
             {
                 if(newval==15) { newval = 0; } else { newval++; }
             }
-            plotcolor=newval;
-            textcolor(vdctoconiocol[plotcolor]);
-            VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+            change_plotcolor(newval);
             break;
         
         // Toggle underline
@@ -2000,8 +2164,20 @@ void main()
             selectmode();
             break;
 
+        // Undo
+        case 'z':
+            if(undoenabled==1 && undo_undopossible==1) { undo_performundo(); }
+            break;
+
+        // Increase/decrease plot screencode by 128 (toggle 'RVS ON' and 'RVS OFF')
+        case 'i':
+            plotscreencode += 128;      // Will increase 128 if <128 and decrease by 128 if >128 by overflow
+            VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+            break;        
+
         // Plot present screencode and attribute
         case CH_SPACE:
+            if(undoenabled==1) { undo_new(screen_row,screen_col,1,1); }
             screenmapplot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
             break;
 
