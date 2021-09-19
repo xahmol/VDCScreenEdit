@@ -787,7 +787,7 @@ void undo_performundo()
         undo_undopossible--;
         if(undonumber>0 && Undo[undonumber-1].address==0) { undo_undopossible=0; }
         if(undonumber==0 && Undo[39].address==0) { undo_undopossible=0; }
-        cprintf("NN: %u NA: %4X UP: %u RP: %u    ",undonumber,undoaddress,undo_undopossible,undo_redopossible); 
+        //cprintf("NN: %u NA: %4X UP: %u RP: %u    ",undonumber,undoaddress,undo_undopossible,undo_redopossible); 
     }
 }
 
@@ -1338,6 +1338,8 @@ void selectmode()
                     return;
                 }
 
+                if(key=='c' ) { undo_escapeundo(); }
+                undo_new(screen_row+yoffset,screen_col+xoffset,select_width,select_height);
                 for(ycount=0;ycount<select_height;ycount++)
                 {
                     y=(screen_row+yoffset>=select_starty)? select_height-ycount-1 : ycount;
@@ -1351,7 +1353,7 @@ void selectmode()
             }
         }
 
-        if( key=='d' && movekey!=CH_ESC && movekey != CH_STOP)
+        if( key=='d')
         {
             for(y=0;y<select_height;y++)
             {
