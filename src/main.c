@@ -110,6 +110,7 @@ unsigned char undoenabled = 0;
 unsigned int undoaddress;
 unsigned char undonumber;
 unsigned char undo_undopossible;
+unsigned char undo_redopossible;
 struct UndoStruct
 {
     unsigned int address;
@@ -117,6 +118,7 @@ struct UndoStruct
     unsigned char xstart;
     unsigned char height;
     unsigned char width;
+    unsigned char redopresent;
 };
 struct UndoStruct Undo[41];
 
@@ -334,7 +336,7 @@ void windowsave(unsigned char ypos, unsigned char height, unsigned char loadsysc
     // Load system charset if needed
     if(loadsyscharset == 1 && charsetchanged[1] == 1)
     {
-        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,255);
+        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
     }
 }
 
@@ -354,7 +356,7 @@ void windowrestore(unsigned char restorealtcharset)
     // Restore custom charset if needed
     if(restorealtcharset == 1 && charsetchanged[1] == 1)
     {
-        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
+        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
     }
 }
 
@@ -718,13 +720,21 @@ void undo_new(unsigned char row, unsigned char col, unsigned char width, unsigne
     // Function to create a new undo buffer position
 
     unsigned char y;
+    unsigned char redoroompresent = 1;
 
-    undo_undopossible=1;
+    if(undo_redopossible>0)
+    {
+        undo_undopossible=1;        
+        undo_redopossible=0;
+    }
+    else
+    {
+        undo_undopossible++;
+    }
     undonumber++;
-    //gotoxy(0,23);
-    //cprintf("UA: %4X UN: %u Row: %u Col: %u Wi: %u He: %u      ",undoaddress,undonumber,row,col,width,height);
     if(undonumber>40) { undonumber=1;}
-    if(undoaddress+(width*height*2)<undoaddress) { undonumber = 1; }
+    if(undoaddress+(width*height*4)<undoaddress) { undonumber = 1; undoaddress = VDCEXTENDED; }
+    if(undoaddress+(width*height*4)>(0xffff - VDCEXTENDED)) { redoroompresent = 0; }
     for(y=0;y<height;y++)
     {
         VDC_CopyMemToVDC(undoaddress+(y*width),screenmap_screenaddr(row+y,col,screenwidth),1,width);
@@ -736,7 +746,10 @@ void undo_new(unsigned char row, unsigned char col, unsigned char width, unsigne
     Undo[undonumber-1].ystart = row;
     Undo[undonumber-1].width = width;
     Undo[undonumber-1].height = height;
-    undoaddress += width*height*2;
+    Undo[undonumber-1].redopresent = redoroompresent;
+    undoaddress += width*height*(2+(2*redoroompresent));
+    //gotoxy(0,24);
+    //cprintf("UN: %u UA: %4X RF: %u NA: %4X UP: %u RP: %u    ",undonumber,Undo[undonumber-1].address,Undo[undonumber-1].redopresent,undoaddress,undo_undopossible,undo_redopossible);   
 }
 
 void undo_performundo()
@@ -745,7 +758,7 @@ void undo_performundo()
 
     unsigned char y, row, col, width, height;
 
-    if(undo_undopossible==1)
+    if(undo_undopossible>0)
     {
         row = Undo[undonumber-1].ystart;
         col = Undo[undonumber-1].xstart;
@@ -753,33 +766,71 @@ void undo_performundo()
         height = Undo[undonumber-1].height;
         for(y=0;y<height;y++)
         {
+            if(Undo[undonumber-1].redopresent>0)
+            {
+                VDC_CopyMemToVDC(Undo[undonumber-1].address+(width*height*2)+(y*width),screenmap_screenaddr(row+y,col,screenwidth),1,width);
+                VDC_CopyMemToVDC(Undo[undonumber-1].address+(width*height*3)+(y*width),screenmap_attraddr(row+y,col,screenwidth,screenheight),1,width);
+            }
             VDC_CopyVDCToMem(Undo[undonumber-1].address+(y*width),screenmap_screenaddr(row+y,col,screenwidth),1,width);
             VDC_CopyVDCToMem(Undo[undonumber-1].address+(width*height)+(y*width),screenmap_attraddr(row+y,col,screenwidth,screenheight),1,width);
         }
         VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
-        //gotoxy(0,23);
-        //cprintf("UN: %u UA: %4X ",undonumber,Undo[undonumber-1].address);
+        if(Undo[undonumber-1].redopresent>0) { Undo[undonumber-1].redopresent=2; undo_redopossible++; }
+        //gotoxy(0,24);
+        //cprintf("UN: %u UA: %4X RF: %u ",undonumber,Undo[undonumber-1].address,Undo[undonumber-1].redopresent); 
         undoaddress = Undo[undonumber-1].address;   
         undonumber--;
         if(undonumber==0)
         {
             if(Undo[39].address>0) { undonumber=40; }
         }    
-        undo_undopossible=0;
-        if(undonumber>0 && Undo[undonumber-1].address>0) { undo_undopossible=1; }
-        if(undonumber==0 && Undo[39].address>0) { undo_undopossible=1; }
-        //cprintf("NN: %u NA: %4X UP: %u    ", undonumber,Undo[undonumber-1].address,undo_undopossible);
+        undo_undopossible--;
+        if(undonumber>0 && Undo[undonumber-1].address==0) { undo_undopossible=0; }
+        if(undonumber==0 && Undo[39].address==0) { undo_undopossible=0; }
+        cprintf("NN: %u NA: %4X UP: %u RP: %u    ",undonumber,undoaddress,undo_undopossible,undo_redopossible); 
     }
 }
 
 void undo_escapeundo()
 {
+    // Function to cancel an undo slot after escape is pressed in selectmode or movemode
+
     Undo[undonumber].address = 0;
     undonumber--;
     if(undonumber==0)
     {
         if(Undo[39].address>0) { undonumber=40; }
     }  
+}
+
+void undo_performredo()
+{
+    // Function to perform an redo if a filled redo slot is present
+
+    unsigned char y, row, col, width, height;
+
+    if(undo_redopossible>0)
+    {
+        if(undonumber<39) { undonumber++; } else { undonumber = 1; }
+        row = Undo[undonumber-1].ystart;
+        col = Undo[undonumber-1].xstart;
+        width = Undo[undonumber-1].width;
+        height = Undo[undonumber-1].height;
+        for(y=0;y<height;y++)
+        {
+            VDC_CopyVDCToMem(Undo[undonumber-1].address+(width*height*2)+(y*width),screenmap_screenaddr(row+y,col,screenwidth),1,width);
+            VDC_CopyVDCToMem(Undo[undonumber-1].address+(width*height*3)+(y*width),screenmap_attraddr(row+y,col,screenwidth,screenheight),1,width);
+        }
+        VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+        //gotoxy(0,24);
+        //cprintf("UN: %u UA: %4X RF: %u ",undonumber,Undo[undonumber-1].address,Undo[undonumber-1].redopresent); 
+        undoaddress = Undo[undonumber-1].address;
+        undo_undopossible++; 
+        undo_redopossible--;
+        if(undonumber<39 && Undo[undonumber].redopresent==0) { undo_redopossible=0; }
+        if(undonumber==39 && Undo[0].redopresent==0) { undo_redopossible=0; }
+        //cprintf("NN: %u NA: %4X UP: %u RP: %u    ",undonumber,undoaddress,undo_undopossible,undo_redopossible); 
+    }
 }
 
 // Application routines
@@ -875,7 +926,12 @@ void writemode()
 
         // Perform undo
         case CH_F2:
-            if(undoenabled==1 && undo_undopossible==1) { undo_performundo(); }
+            if(undoenabled==1 && undo_undopossible>0) { undo_performundo(); }
+            break;
+
+        // Perform redo
+        case CH_F4:
+            if(undoenabled==1 && undo_redopossible>0) { undo_performredo(); }
             break;
 
         // Toggle RVS with the RVS ON and RVS OFF keys (control 9 and control 0)
@@ -996,6 +1052,16 @@ void colorwrite()
             if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
             POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
             plotmove(CH_CURS_RIGHT);
+            break;
+
+        // Perform undo
+        case CH_F2:
+            if(undoenabled==1 && undo_undopossible>0) { undo_performundo(); }
+            break;
+
+        // Perform redo
+        case CH_F4:
+            if(undoenabled==1 && undo_redopossible>0) { undo_performredo(); }
             break;
 
         // Toggle underline
@@ -1321,6 +1387,394 @@ void selectmode()
     }
 }
 
+void showchareditfield(unsigned char stdoralt)
+{
+    // Function to draw char editor background field
+    // Input: Flag for which charset is edited, standard (0) or alternate (1)
+
+    unsigned char attribute = mc_menupopup-(VDC_A_ALTCHAR*stdoralt);
+
+    windowsave(0,12,0);
+    VDC_FillArea(0,67,CH_SPACE,13,12,attribute);
+}
+
+unsigned int charaddress(unsigned char screencode, unsigned char stdoralt, unsigned char vdcormem)
+{
+    // Function to calculate address of character to edit
+    // Input:   screencode to edit, flag for standard (0) or alternate (1) charset,
+    //          flag for VDC (0) or bank 1 (1) memory address
+
+    unsigned int address;
+
+    if(vdcormem==0)
+    {
+        address = (stdoralt==0)? VDCCHARSTD:VDCCHARALT;
+        address += screencode*16;
+    }
+    else
+    {
+        address = (stdoralt==0)? CHARSETNORMAL:CHARSETALTERNATE;
+        address += screencode*8;
+    }
+    return address;
+}
+
+void showchareditgrid(unsigned int screencode, unsigned char stdoralt)
+{
+    // Function to draw grid with present char to edit
+
+    unsigned char x,y,char_byte,colorbase,colorbit;
+    unsigned int address;
+
+    address = charaddress(screencode,stdoralt,0);
+    
+    colorbase = mc_menupopup - (VDC_A_ALTCHAR*stdoralt);
+
+    sprintf(buffer,"Char %2X %s",screencode,(stdoralt==0)? "Std":"Alt");
+    VDC_PrintAt(1,68,buffer,colorbase);
+
+    for(y=0;y<8;y++)
+    {
+        char_byte = VDC_Peek(address+y);
+        sprintf(buffer,"%2X",char_byte);
+        VDC_PrintAt(y+3,68,buffer,colorbase);
+        for(x=0;x<8;x++)
+        {
+            if(char_byte & (1<<(7-x)))
+            {
+                colorbit = colorbase;
+            }
+            else
+            {
+                colorbit = colorbase-VDC_A_REVERSE;
+            }
+            VDC_Plot(y+3,x+71,CH_SPACE,colorbit);
+        }
+    }
+}
+
+void chareditor()
+{
+    unsigned char x,y,char_altorstd,char_screencode,key;
+    unsigned char xpos=0;
+    unsigned char ypos=0;
+    unsigned char char_present[8];
+    unsigned char char_copy[8];
+    unsigned char char_undo[8];
+    unsigned char char_buffer[8];
+    unsigned int char_address;
+    char* ptrend;
+
+    char_altorstd = plotaltchar;
+    char_screencode = plotscreencode;
+    char_address = charaddress(char_screencode, char_altorstd,0);
+    charsetchanged[plotaltchar]=1;
+
+    // Load system charset if needed in charset not edited
+    if(plotaltchar==0 && charsetchanged[1] ==1)
+    {
+        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
+    }
+    if(plotaltchar==1 && charsetchanged[0] ==1)
+    {
+        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARSTD,256);
+    }
+
+    for(y=0;y<8;y++)
+    {
+        char_present[y]=VDC_Peek(char_address+y);
+        char_undo[y]=char_present[y];
+    }
+
+    showchareditfield(char_altorstd);
+    showchareditgrid(char_screencode, char_altorstd);
+    textcolor(vdctoconiocol[mc_menupopup & 0x0f]);
+    gotoxy(xpos+71,ypos+3);
+    do
+    {
+        key = cgetc();
+
+        switch (key)
+        {
+        // Movement
+        case CH_CURS_RIGHT:
+            if(xpos<7) {xpos++; }
+            gotoxy(xpos+71,ypos+3);
+            break;
+        
+        case CH_CURS_LEFT:
+            if(xpos>0) {xpos--; }
+            gotoxy(xpos+71,ypos+3);
+            break;
+        
+        case CH_CURS_DOWN:
+            if(ypos<7) {ypos++; }
+            gotoxy(xpos+71,ypos+3);
+            break;
+
+        case CH_CURS_UP:
+            if(ypos>0) {ypos--; }
+            gotoxy(xpos+71,ypos+3);
+            break;
+
+        // Next or previous character
+        case '+':
+        case '-':
+            if(key=='+')
+            {
+                char_screencode++;
+            }
+            else
+            {
+                char_screencode--;
+            }
+            char_address = charaddress(char_screencode,char_altorstd,0);
+            for(y=0;y<8;y++)
+            {
+                char_present[y]=VDC_Peek(char_address+y);
+                char_undo[y]=char_present[y];
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Toggle bit
+        case CH_SPACE:
+            char_present[ypos] ^= 1 << (7-xpos);
+            VDC_Poke(char_address+ypos,char_present[ypos]);
+            POKEB(charaddress(char_screencode,char_altorstd,1)+ypos,1,char_present[ypos]);
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Inverse
+        case 'i':
+            for(y=0;y<8;y++)
+            {
+                char_present[y] ^= 0xff;
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Delete
+        case CH_DEL:
+            for(y=0;y<8;y++)
+            {
+                char_present[y] = 0;
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Undo
+        case 'z':
+            for(y=0;y<8;y++)
+            {
+                char_present[y] = char_undo[y];
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Restore from system font
+        case 's':
+            for(y=0;y<8;y++)
+            {
+                char_present[y] = PEEKB(CHARSETSYSTEM+y+(char_screencode*8),1);
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Copy
+        case 'c':
+            for(y=0;y<8;y++)
+            {
+                char_copy[y] = char_present[y];
+            }
+            break;
+
+        // Paste
+        case 'v':
+            for(y=0;y<8;y++)
+            {
+                char_present[y] = char_copy[y];
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Switch charset
+        case 'a':
+            char_altorstd = (char_altorstd==0)? 1:0;
+            if(char_altorstd==0)
+            {
+                VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,256);
+                VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
+            }
+            else
+            {
+                VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
+                VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARSTD,256);
+            }
+            charsetchanged[char_altorstd]=1;
+            windowrestore(0);
+            showchareditfield(char_altorstd);
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Mirror y axis
+        case 'y':
+            for(y=0;y<8;y++)
+            {
+                VDC_Poke(char_address+y,char_present[7-y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[7-y]);
+            }
+            for(y=0;y<8;y++)
+            {
+                char_present[y]=VDC_Peek(char_address+y);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Mirror x axis
+        case 'x':
+            for(y=0;y<8;y++)
+            {
+                char_present[y] = (char_present[y] & 0xF0) >> 4 | (char_present[y] & 0x0F) << 4;
+                char_present[y] = (char_present[y] & 0xCC) >> 2 | (char_present[y] & 0x33) << 2;
+                char_present[y] = (char_present[y] & 0xAA) >> 1 | (char_present[y] & 0x55) << 1;
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Rotate clockwise
+        case 'o':
+            for(y=0;y<8;y++)
+            {
+                for(x=0;x<8;x++)
+                {
+                    if(char_present[y] & (1<<(7-x)))
+                    {
+                        char_buffer[x] |= (1<<y);
+                    }
+                    else
+                    {
+                        char_buffer[x] &= ~(1<<y);
+                    }
+                }
+            }
+            for(y=0;y<8;y++)
+            {
+                char_present[y]=char_buffer[y];
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Scroll up
+        case 'u':
+            for(y=1;y<8;y++)
+            {
+                char_buffer[y-1]=char_present[y];
+            }
+            char_buffer[7]=char_present[0];
+            for(y=0;y<8;y++)
+            {
+                char_present[y]=char_buffer[y];
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Scroll down
+        case 'd':
+            for(y=1;y<8;y++)
+            {
+                char_buffer[y]=char_present[y-1];
+            }
+            char_buffer[0]=char_present[7];
+            for(y=0;y<8;y++)
+            {
+                char_present[y]=char_buffer[y];
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Scroll right
+        case 'r':
+            for(y=0;y<8;y++)
+            {
+                char_buffer[y]=char_present[y]>>1;
+                if(char_present[y]&0x01) { char_buffer[y]+=0x80; }
+            }
+            for(y=0;y<8;y++)
+            {
+                char_present[y]=char_buffer[y];
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+        
+        // Scroll left
+        case 'l':
+            for(y=0;y<8;y++)
+            {
+                char_buffer[y]=char_present[y]<<1;
+                if(char_present[y]&0x80) { char_buffer[y]+=0x01; }
+            }
+            for(y=0;y<8;y++)
+            {
+                char_present[y]=char_buffer[y];
+                VDC_Poke(char_address+y,char_present[y]);
+                POKEB(charaddress(char_screencode,char_altorstd,1)+y,1,char_present[y]);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Hex edit
+        case 'h':
+            sprintf(buffer,"%2X",char_present[ypos]);
+            textInput(68,ypos+3,buffer,2);
+            char_present[ypos] = (unsigned char)strtol(buffer,&ptrend,16);
+            gotoxy(71+xpos,3+ypos);
+            cursor(1);
+            VDC_Poke(char_address+ypos,char_present[ypos]);
+            POKEB(charaddress(char_screencode,char_altorstd,1)+ypos,1,char_present[ypos]);
+            showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        default:
+            break;
+        }
+    } while (key != CH_ESC && key != CH_STOP);
+
+    windowrestore(0);
+
+    if(char_altorstd==0)
+    {
+        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
+    }
+    else
+    {
+        VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,256);
+    }
+
+    textcolor(vdctoconiocol[plotcolor]);
+    gotoxy(screen_col,screen_row);
+}
+
 void resizewidth()
 {
     // Function to resize screen canvas width
@@ -1399,6 +1853,7 @@ void resizewidth()
         sprintf(pulldownmenutitles[0][0],"Width:   %5i ",screenwidth);
         menuplacebar();
         undo_undopossible=0;
+        undo_redopossible=0;
     }
 }
 
@@ -1465,6 +1920,7 @@ void resizeheight()
         sprintf(pulldownmenutitles[0][1],"Height:  %5i ",screenheight);
         menuplacebar();
         undo_undopossible=0;
+        undo_redopossible=0;
     }
 }
 
@@ -1663,6 +2119,7 @@ void loadscreenmap()
             windowsave(0,1,0);
             menuplacebar();
             undo_undopossible=0;
+            undo_redopossible=0;
         }
     }
 }
@@ -1838,6 +2295,7 @@ void loadproject()
         windowsave(0,1,0);
         menuplacebar();
         undo_undopossible=0;
+        undo_redopossible=0;
     }
 
     // Load standard charset
@@ -1874,7 +2332,7 @@ void loadcharset(unsigned char stdoralt)
     {
         if(stdoralt==0)
         {
-            VDC_RedefineCharset(charsetaddress,1,VDCCHARSTD,255);
+            VDC_RedefineCharset(charsetaddress,1,VDCCHARSTD,256);
         }
         charsetchanged[stdoralt]=1;
     }
@@ -2039,6 +2497,7 @@ void mainmenuloop()
             undoaddress = VDCEXTENDED;                              // Reset undo address
             undonumber = 0;                                         // Reset undo number
             undo_undopossible = 0;                                  // Reset undo possible flag
+            undo_redopossible = 0;
             break;
 
         default:
@@ -2105,6 +2564,7 @@ void main()
         undoaddress = VDCEXTENDED;                              // Reset undo address
         undonumber = 0;                                         // Reset undo number
         undo_undopossible = 0;                                  // Reset undo possible flag
+        undo_redopossible = 0;                                  // Reset redo possible flag
     }
 
     // Copy charsets from ROM
@@ -2116,8 +2576,10 @@ void main()
         VDC_CopyMemToVDC(VDCBASETEXT,SCREENMAPBASE,1,4048);
     }
 
-    // Load system charset to bank 1
-    VDC_LoadCharset("vdcse.sfon",bootdevice, CHARSETSYSTEM, 1, 0);
+    // Load default charsets to bank 1
+    VDC_LoadCharset("vdcse.falt",bootdevice, CHARSETSYSTEM, 1, 0);
+    VDC_LoadCharset("vdcse.fstd",bootdevice, CHARSETNORMAL, 1, 0);
+    BankMemCopy(CHARSETSYSTEM,1,CHARSETALTERNATE,1,2048);
 
     // Clear screen map in bank 1 with spaces in text color white
     screenmapfill(CH_SPACE,VDC_WHITE);
@@ -2204,6 +2666,11 @@ void main()
             VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
             break;
 
+        // Character eddit mode
+        case 'e':
+            chareditor();
+            break;
+
         // Grab underlying character and attributes
         case 'g':
             plotscreencode = PEEKB(screenmap_screenaddr(screen_row+yoffset,screen_col+xoffset,screenwidth),1);
@@ -2244,7 +2711,12 @@ void main()
 
         // Undo
         case 'z':
-            if(undoenabled==1 && undo_undopossible==1) { undo_performundo(); }
+            if(undoenabled==1 && undo_undopossible>0) { undo_performundo(); }
+            break;
+        
+        // Redo
+        case 'y':
+            if(undoenabled==1 && undo_redopossible>0) { undo_performredo(); }
             break;
 
         // Increase/decrease plot screencode by 128 (toggle 'RVS ON' and 'RVS OFF')
