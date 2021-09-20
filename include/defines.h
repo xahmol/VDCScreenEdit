@@ -6,7 +6,7 @@
 #define MACOSIZE            0x0800      // Length of machine code area
 
 /* Bank 1 memory addresses mapping */
-#define WINDOWBASEADDRESS   0x2000      // Base address for windows system data, 4k reserved
+#define WINDOWBASEADDRESS   0x2000      // Base address for windows system data, 8k reserved
 #define CHARSETSYSTEM       0x4000      // Base address for system charset
 #define CHARSETNORMAL       0x4800      // Base address for normal charset
 #define CHARSETALTERNATE    0x5000      // Base address for alternate charset

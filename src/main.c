@@ -98,7 +98,6 @@ char pulldownmenutitles[5][5][16] = {
      "Save standard  ",
      "Save alternate "},
     {"Version/credits",
-     "Help           ",
      "Exit program   "},
     {"Yes",\
      "No "}
@@ -833,6 +832,42 @@ void undo_performredo()
     }
 }
 
+// Help screens
+void helpscreen_load(unsigned char screennumber)
+{
+    // Function to show selected help screen
+    // Input: screennumber: 1-Main mode, 2-Character editor, 3-SelectMoveLinebox, 4-Write/colorwrite mode
+
+    // Load system charset if needed
+    if(charsetchanged[1] == 1)
+    {
+        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
+    }
+
+    // Load selected help screen
+    sprintf(buffer,"vdcse.hsc%u",screennumber);
+
+    if(VDC_LoadScreen(buffer,bootdevice,WINDOWBASEADDRESS,1)>WINDOWBASEADDRESS)
+    {
+        VDC_CopyMemToVDC(VDCBASETEXT,WINDOWBASEADDRESS,1,4048);
+    }
+    else
+    {
+        messagepopup("Insert application disk to view help.",0);
+    }
+    
+    cgetc();
+
+    // Restore screen
+    VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+
+    // Restore custom charset if needed
+    if(charsetchanged[1] == 1)
+    {
+        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
+    }
+}
+
 // Application routines
 void plotmove(direction)
 {
@@ -932,6 +967,10 @@ void writemode()
         // Perform redo
         case CH_F4:
             if(undoenabled==1 && undo_redopossible>0) { undo_performredo(); }
+            break;
+
+        case CH_F8:
+            helpscreen_load(4);
             break;
 
         // Toggle RVS with the RVS ON and RVS OFF keys (control 9 and control 0)
@@ -1085,6 +1124,10 @@ void colorwrite()
             if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
             POKEB(screenmap_attraddr(screen_row+yoffset,screen_col+xoffset,screenwidth,screenheight),1,attribute);
             plotmove(CH_CURS_RIGHT);
+            break;
+
+        case CH_F8:
+            helpscreen_load(4);
             break;            
 
         default:
@@ -1191,6 +1234,10 @@ void lineandbox(unsigned char draworselect)
             }
             break;
         
+        case CH_F8:
+            helpscreen_load(3);
+            break;
+        
         default:
             break;
         }
@@ -1259,6 +1306,10 @@ void movemode()
             VDC_HChar(0,0,CH_SPACE,80,VDC_WHITE);
             moved=1;
             break;
+
+        case CH_F8:
+            helpscreen_load(3);
+            break;
         
         default:
             break;
@@ -1299,6 +1350,9 @@ void selectmode()
     do
     {
         key=cgetc();
+
+        if(key==CH_F8) { helpscreen_load(3); }
+
     } while (key !='d' && key !='x' && key !='c' && key != 'p' && key !='a' && key != CH_ESC && key != CH_STOP );
 
     if(key!=CH_ESC && key != CH_STOP)
@@ -1323,6 +1377,10 @@ void selectmode()
                 case CH_CURS_UP:
                 case CH_CURS_DOWN:
                     plotmove(movekey);
+                    break;
+
+                case CH_F8:
+                    helpscreen_load(3);
                     break;
 
                 default:
@@ -1755,6 +1813,18 @@ void chareditor()
             VDC_Poke(char_address+ypos,char_present[ypos]);
             POKEB(charaddress(char_screencode,char_altorstd,1)+ypos,1,char_present[ypos]);
             showchareditgrid(char_screencode, char_altorstd);
+            break;
+
+        // Help screen
+        case CH_F8:
+            windowrestore(0);
+            helpscreen_load(2);
+            if(plotaltchar==0 && charsetchanged[1] ==1)
+            {
+                VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
+            }
+            showchareditfield(char_altorstd);
+            showchareditgrid(char_screencode,char_altorstd);
             break;
 
         default:
@@ -2392,16 +2462,7 @@ void versioninfo()
     VDC_PrintAt(16,6,"(C) 2021, IDreamtIn8Bits.com",mc_menupopup);
     VDC_PrintAt(18,6,"Press a key to continue.",mc_menupopup);
     cgetc();
-    windowrestore(1);
-}
-
-void helpscreen()
-{
-    windownew(5,5,15,70,1);
-    VDC_PrintAt(6,6,"Help",mc_menupopup+VDC_A_UNDERLINE);
-    VDC_PrintAt(18,6,"Press a key to continue.",mc_menupopup);
-    cgetc();
-    windowrestore(1);
+    windowrestore(0);
 }
 
 void mainmenuloop()
@@ -2485,17 +2546,13 @@ void mainmenuloop()
             break;
 
         case 42:
-            helpscreen();
-            break;
-
-        case 43:
             appexit = 1;
             menuchoice = 99;
             break;
         
-        case 44:
+        case 43:
             undoenabled = (undoenabled==0)? 1:0;
-            sprintf(pulldownmenutitles[3][3],"Undo: %s",(undoenabled==1)? "Enabled  ":"Disabled ");
+            sprintf(pulldownmenutitles[3][2],"Undo: %s",(undoenabled==1)? "Enabled  ":"Disabled ");
             undoaddress = VDCEXTENDED;                              // Reset undo address
             undonumber = 0;                                         // Reset undo number
             undo_undopossible = 0;                                  // Reset undo possible flag
@@ -2560,8 +2617,8 @@ void main()
     {
         VDC_SetExtendedVDCMemSize();                            // Enable VDC 64KB extended memory
         clrscr();                                               // Clear screen to reset screen data
-        strcpy(pulldownmenutitles[3][3],"Undo: Enabled  ");     // Enable undo menuoption
-        pulldownmenuoptions[3]=4;                               // Enable undo menupotion
+        strcpy(pulldownmenutitles[3][2],"Undo: Enabled  ");     // Enable undo menuoption
+        pulldownmenuoptions[3]=3;                               // Enable undo menupotion
         undoenabled = 1;                                        // Set undo enabled flag
         undoaddress = VDCEXTENDED;                              // Reset undo address
         undonumber = 0;                                         // Reset undo number
@@ -2757,6 +2814,11 @@ void main()
             gotoxy(screen_col,screen_row);
             textcolor(vdctoconiocol[plotcolor]);
             cursor(1);
+            break;
+
+        // Help screen
+        case CH_F8:
+            helpscreen_load(1);
             break;
         
         default:
