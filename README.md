@@ -113,7 +113,7 @@ Selecting this menu option will clear the canvas (which means filling the canvas
 
 *Fill: Fill the canvas*
 
-Similar to clear, but this will fill the canvas with the present selected screencode and attributes (so the values that the cursor was showing).
+Similar to clear, but this will fill the canvas with the present selected [screencode](https://sta.c64.org/cbm64scr.html) and attributes (so the values that the cursor was showing).
 
 **_File menu_**
 
@@ -186,7 +186,7 @@ After the title screen, the program starts in this mode. At start the screen sho
 
 ![Screen in main mode](https://github.com/xahmol/VDCScreenEdit/blob/main/screenshots/VDCSE%20empty%20start%20screen.png?raw=true)
 
-Only a blinking cursor with the presently selected screencode and attributes is visible.
+Only a blinking cursor with the presently selected [screencode](https://sta.c64.org/cbm64scr.html) and attributes is visible.
 
 Press these keys in main mode for editing:
 
@@ -223,11 +223,11 @@ Press the **cursor keys** to move the cursor around the screen. If the canvas si
 
 Pressing **HOME** will return the cursor to the upper left position.
 
-*Selecting the screencode to plot*
+*Selecting the [screencode](https://sta.c64.org/cbm64scr.html) to plot*
 
-The **+** or **-** key will increase resp. decrease the selected screencode by one. The cursor will update to the presently selected screencode.
+The **+** or **-** key will increase resp. decrease the selected [screencode](https://sta.c64.org/cbm64scr.html) by one. The cursor will update to the presently selected [screencode](https://sta.c64.org/cbm64scr.html).
 
-Pressing **I** will increase the screencode by 128 if the present screencode is lower than 128, otherwise decrease by 128. This will emulate RVS On / RVS Off.
+Pressing **I** will increase the [screencode](https://sta.c64.org/cbm64scr.html) by 128 if the present [screencode](https://sta.c64.org/cbm64scr.html) is lower than 128, otherwise decrease by 128. This will emulate RVS On / RVS Off.
 
 *Selecting the attributes to plot*
 
@@ -240,18 +240,18 @@ Press **SPACE** to plot the presently selected character in the presently select
 
 *Grabbing a character*
 
-Pressing **G** will 'grab' the character and attributes at the present cursor position and change the selected character screencode and attribute to these values for use in all other edit functions.
+Pressing **G** will 'grab' the character and attributes at the present cursor position and change the selected character [screencode](https://sta.c64.org/cbm64scr.html) and attribute to these values for use in all other edit functions.
 
 *Character edit mode*
 
-This will enter [character edit mode](#character-editor) and start with editing the presently selected screencode. Tip: if you want to edit a specific character on the screen, grab that character first by moving the cursor on that character and press **G** for grab.
+This will enter [character edit mode](#character-editor) and start with editing the presently selected [screencode](https://sta.c64.org/cbm64scr.html). Tip: if you want to edit a specific character on the screen, grab that character first by moving the cursor on that character and press **G** for grab.
 
 *Enter edit modes*
 
 Press **S** ([Select mode](#select-mode)) , **M** ([Move mode](#move-mode)), **L** ([Line and box mode](#line-and-box-mode)), **W** ([Write mode](#write-mode)) or **C** ([Color write mode](#color-write-mode)) for entering the corresponding edit modes.
 Reference is made to the specific sections in this readme for these modes (click the links). From all modes, return to main mode by pressing **ESC** or **STOP**.
 
-NB: No visible clue is given which mode is activated (due to constraints by not being able to take unaltered charsets for granted and the cursor already used for showing screencode and attribute selected).
+NB: No visible clue is given which mode is activated (due to constraints by not being able to take unaltered charsets for granted and the cursor already used for showing [screencode](https://sta.c64.org/cbm64scr.html) and attribute selected).
 
 
 ## Character editor:
@@ -330,7 +330,7 @@ NB: No visible clue is given which mode is activated (due to constraints by not 
 |**F2**|Undo
 |**F4**|Redo
 |**C=** / **CONTROL** + **1-8**|Select color
-|**CONTROL** + **9 / 0**|RVS On / RVS Off (toggle screencode + 128)
+|**CONTROL** + **9 / 0**|RVS On / RVS Off (toggle [screencode](https://sta.c64.org/cbm64scr.html) + 128)
 |**ESC** / **STOP**|Go back to main mode
 |**F8**|Help screen
 |**Other keys**|Plot corresponding character (if printable)
