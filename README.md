@@ -257,6 +257,8 @@ NB: No visible clue is given which mode is activated (due to constraints by not 
 ## Character editor:
 ([Back to contents](#contents))
 
+![Character editor](https://github.com/xahmol/VDCScreenEdit/blob/main/screenshots/VDCSE%20Chaedit.png?raw=true)
+
 |Key|Description
 |---|---|
 |**Cursor keys**|Move cursor
@@ -279,6 +281,8 @@ NB: No visible clue is given which mode is activated (due to constraints by not 
 
 ## Select mode:
 ([Back to contents](#contents))
+
+![Select mode](https://github.com/xahmol/VDCScreenEdit/blob/main/screenshots/VDCSE%20select.png?raw=true)
 
 |Key|Description
 |---|---|
