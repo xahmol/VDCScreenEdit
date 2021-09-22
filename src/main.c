@@ -844,6 +844,9 @@ void helpscreen_load(unsigned char screennumber)
         VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
     }
 
+    // Set background color to black
+    VDC_BackColor(VDC_BLACK);
+
     // Load selected help screen
     sprintf(buffer,"vdcse.hsc%u",screennumber);
 
@@ -859,6 +862,7 @@ void helpscreen_load(unsigned char screennumber)
     cgetc();
 
     // Restore screen
+    VDC_BackColor(screenbackground);
     VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
 
     // Restore custom charset if needed
@@ -1235,7 +1239,7 @@ void lineandbox(unsigned char draworselect)
             break;
         
         case CH_F8:
-            helpscreen_load(3);
+            if(select_startx==select_endx && select_starty==select_endy) helpscreen_load(3);
             break;
         
         default:
