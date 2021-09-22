@@ -1,3 +1,11 @@
+# VDC Screen Editor:
+# Screen editor for the C128 80 column mode
+# Written in 2021 by Xander Mol
+# https://github.com/xahmol/VDCScreenEdit
+# https://www.idreamtin8bits.com/
+
+# See src/main.c for full credits
+
 # Prerequisites for building:
 # - CC65 compiled and included in path with sudo make avail
 # - ZIP packages installed: sudo apt-get install zip
@@ -7,10 +15,11 @@ SOURCESMAIN = src/main.c src/vdc_core.c
 SOURCESLIB = src/vdc_core_assembly.s
 OBJECTS = vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg
 
-ZIP = vdcscreenedit-$(shell date "+%Y%m%d-%H%M").zip
+ZIP = vdcscreenedit-v090-$(shell date "+%Y%m%d-%H%M").zip
 D64 = vdcse.d64
 D71 = vdcse.d71
 D81 = vdcse.d81
+README = README.pdf
 
 # Hostname of Ultimate II+ target for deployment. Edit for proper IP and usb number
 ULTHOST = ftp://192.168.1.19/usb1/dev/
@@ -27,7 +36,7 @@ LDFLAGSMAIN = -t $(CC65_TARGET) -C vdcse-cc65config.cfg -m $(MAIN).map
 
 .SUFFIXES:
 .PHONY: all clean deploy vice
-all: $(MAIN) $(D64) $(D71) $(D81)
+all: $(MAIN) $(D64) $(D71) $(D81) $(ZIP)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(SOURCESMAIN:.c=.d)
@@ -38,9 +47,6 @@ endif
   
 $(MAIN): $(SOURCESLIB) $(SOURCESMAIN:.c=.o)
 	$(CC) $(LDFLAGSMAIN) -o $@ $^
-
-#$(ZIP): $(MAIN) $(OBJECTS)
-#	zip $@ $^
 
 $(D64):	$(MAIN) $(OBJECTS)
 	c1541 -format "vdc screen edit,xm" d64 $(D64)
@@ -77,6 +83,9 @@ $(D81):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D81) -write vdcse.hsc2.prg vdcse.hsc2
 	c1541 -attach $(D81) -write vdcse.hsc3.prg vdcse.hsc3
 	c1541 -attach $(D81) -write vdcse.hsc4.prg vdcse.hsc4
+
+$(ZIP): $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(README)
+	zip $@ $^
 
 clean:
 	$(RM) $(SOURCESMAIN:.c=.o) $(SOURCESMAIN:.c=.d) $(MAIN) $(MAIN).map
