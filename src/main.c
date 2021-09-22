@@ -82,7 +82,7 @@ unsigned char menubaroptions = 4;
 unsigned char pulldownmenunumber = 8;
 char menubartitles[4][12] = {"Screen","File","Charset","Information"};
 unsigned char menubarcoords[4] = {1,8,13,21};
-unsigned char pulldownmenuoptions[5] = {5,4,4,3,2};
+unsigned char pulldownmenuoptions[5] = {5,4,4,2,2};
 char pulldownmenutitles[5][5][16] = {
     {"Width:      80 ",
      "Height:     25 ",
@@ -335,7 +335,7 @@ void windowsave(unsigned char ypos, unsigned char height, unsigned char loadsysc
     // Load system charset if needed
     if(loadsyscharset == 1 && charsetchanged[1] == 1)
     {
-        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
+        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,255);
     }
 }
 
@@ -355,7 +355,7 @@ void windowrestore(unsigned char restorealtcharset)
     // Restore custom charset if needed
     if(restorealtcharset == 1 && charsetchanged[1] == 1)
     {
-        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
+        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
     }
 }
 
@@ -841,11 +841,12 @@ void helpscreen_load(unsigned char screennumber)
     // Load system charset if needed
     if(charsetchanged[1] == 1)
     {
-        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
+        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,255);
     }
 
-    // Set background color to black
+    // Set background color to black and switch cursor off
     VDC_BackColor(VDC_BLACK);
+    cursor(0);
 
     // Load selected help screen
     sprintf(buffer,"vdcse.hsc%u",screennumber);
@@ -864,11 +865,17 @@ void helpscreen_load(unsigned char screennumber)
     // Restore screen
     VDC_BackColor(screenbackground);
     VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+    if(screennumber!=2)
+    {
+        gotoxy(screen_col,screen_row);
+        VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+    }
+    cursor(1);
 
     // Restore custom charset if needed
     if(charsetchanged[1] == 1)
     {
-        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
+        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
     }
 }
 
@@ -1261,6 +1268,7 @@ void lineandbox(unsigned char draworselect)
             BankMemSet(screenmap_screenaddr(y,select_startx,screenwidth),1,plotscreencode,select_width);
             BankMemSet(screenmap_attraddr(y,select_startx,screenwidth,screenheight),1,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse,plotaltchar),select_width);
         }
+        VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
     }
     else
     {
@@ -1444,6 +1452,7 @@ void selectmode()
         }
 
         VDC_CopyViewPortToVDC(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset,0,0,80,25);
+        VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
     }
     else
     {
@@ -1537,11 +1546,11 @@ void chareditor()
     // Load system charset if needed in charset not edited
     if(plotaltchar==0 && charsetchanged[1] ==1)
     {
-        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
+        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,255);
     }
     if(plotaltchar==1 && charsetchanged[0] ==1)
     {
-        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARSTD,256);
+        VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARSTD,255);
     }
 
     for(y=0;y<8;y++)
@@ -1677,13 +1686,13 @@ void chareditor()
             char_altorstd = (char_altorstd==0)? 1:0;
             if(char_altorstd==0)
             {
-                VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,256);
-                VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,256);
+                VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,255);
+                VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,255);
             }
             else
             {
-                VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
-                VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARSTD,256);
+                VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
+                VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARSTD,255);
             }
             charsetchanged[char_altorstd]=1;
             windowrestore(0);
@@ -1825,7 +1834,7 @@ void chareditor()
             helpscreen_load(2);
             if(plotaltchar==0 && charsetchanged[1] ==1)
             {
-                VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
+                VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
             }
             showchareditfield(char_altorstd);
             showchareditgrid(char_screencode,char_altorstd);
@@ -1840,15 +1849,16 @@ void chareditor()
 
     if(char_altorstd==0)
     {
-        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,256);
+        VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
     }
     else
     {
-        VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,256);
+        VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,255);
     }
 
     textcolor(vdctoconiocol[plotcolor]);
     gotoxy(screen_col,screen_row);
+    VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
 }
 
 void resizewidth()
@@ -2408,7 +2418,7 @@ void loadcharset(unsigned char stdoralt)
     {
         if(stdoralt==0)
         {
-            VDC_RedefineCharset(charsetaddress,1,VDCCHARSTD,256);
+            VDC_RedefineCharset(charsetaddress,1,VDCCHARSTD,255);
         }
         charsetchanged[stdoralt]=1;
     }
