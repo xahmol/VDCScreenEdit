@@ -41,7 +41,7 @@ Commodore 128 80 column screen editor
 
 Link to latest build:
 
-Version 0.9 - 20210922-1331:
+Version 090-20210922-2251:
 - First released beta version
 
 ## Introduction
