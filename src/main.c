@@ -966,7 +966,8 @@ void writemode()
 
         // Delete present screencode and attributes
         case CH_DEL:
-            screenmapplot(screen_row,screen_col,CH_SPACE,VDC_WHITE);
+            if(undoenabled == 1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
+            screenmapplot(screen_row+yoffset,screen_col+xoffset,CH_SPACE,VDC_WHITE);
             VDC_Plot(screen_row,screen_col,CH_SPACE,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
             break;
 
@@ -2356,9 +2357,12 @@ void loadproject()
     screen_col              = projbuffer[ 2];
     screen_row              = projbuffer[ 3];
     screenwidth             = projbuffer[ 4]*256+projbuffer[ 5];
+    sprintf(pulldownmenutitles[0][0],"Width:   %5i ",screenwidth);
     screenheight            = projbuffer[ 6]*256+projbuffer [7];
+    sprintf(pulldownmenutitles[0][1],"Height:  %5i ",screenheight);
     screentotal             = projbuffer[ 8]*256+projbuffer[ 9];
     screenbackground        = projbuffer[10];
+    sprintf(buffer,"Color: %2i",screenbackground);
     mc_mb_normal            = projbuffer[11];
     mc_mb_select            = projbuffer[12];
     mc_pd_normal            = projbuffer[13];
@@ -2800,14 +2804,14 @@ void main()
 
         // Plot present screencode and attribute
         case CH_SPACE:
-            if(undoenabled==1) { undo_new(screen_row,screen_col,1,1); }
-            screenmapplot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+            if(undoenabled==1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
+            screenmapplot(screen_row+yoffset,screen_col+xoffset,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
             break;
 
         // Delete present screencode and attributes
         case CH_DEL:
-            if(undoenabled==1) { undo_new(screen_row,screen_col,1,1); }
-            screenmapplot(screen_row,screen_col,CH_SPACE,VDC_WHITE);
+            if(undoenabled==1) { undo_new(screen_row+yoffset,screen_col+xoffset,1,1); }
+            screenmapplot(screen_row+yoffset,screen_col+xoffset,CH_SPACE,VDC_WHITE);
             break;
 
         // Go to upper left corner
