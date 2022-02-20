@@ -12,8 +12,8 @@
 # - wput command installed: sudo apt-get install wput
 
 SOURCESMAIN = src/main.c src/vdc_core.c
-SOURCESLIB = src/vdc_core_assembly.s
-OBJECTS = vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg
+SOURCESLIB = src/vdc_core_assembly.s src/bootsect.s
+OBJECTS = bootsect.bin vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg
 
 ZIP = vdcscreenedit-v090-$(shell date "+%Y%m%d-%H%M").zip
 D64 = vdcse.d64
@@ -29,7 +29,7 @@ MAIN = vdcse.prg
 
 CC65_TARGET = c128
 CC = cl65
-CFLAGS  = -t $(CC65_TARGET) --create-dep $(<:.c=.d) -O -I include
+CFLAGS  = -t $(CC65_TARGET) --create-dep $(<:.c=.d) -Os -I include
 LDFLAGSMAIN = -t $(CC65_TARGET) -C vdcse-cc65config.cfg -m $(MAIN).map
 
 ########################################
@@ -49,7 +49,10 @@ $(MAIN): $(SOURCESLIB) $(SOURCESMAIN:.c=.o)
 	$(CC) $(LDFLAGSMAIN) -o $@ $^
 
 $(D64):	$(MAIN) $(OBJECTS)
-	c1541 -format "vdc screen edit,xm" d64 $(D64)
+	c1541 -format "vdcse,xm" d64 $(D64)
+	c1541 $(D64) -bwrite bootsect.bin 1 0
+	c1541 $(D64) -bpoke 18 0 4 $14 %11111110
+	c1541 $(D64) -bam 1 1
 	c1541 -attach $(D64) -write vdcse.prg vdcse
 	c1541 -attach $(D64) -write vdcse.maco.prg vdcse.maco
 	c1541 -attach $(D64) -write vdcse.falt.prg vdcse.falt
@@ -61,7 +64,10 @@ $(D64):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D64) -write vdcse.hsc4.prg vdcse.hsc4
 
 $(D71):	$(MAIN) $(OBJECTS)
-	c1541 -format "vdc screen edit,xm" d71 $(D71)
+	c1541 -format "vdcse,xm" d71 $(D71)
+	c1541 $(D71) -bwrite bootsect.bin 1 0
+	c1541 $(D71) -bpoke 18 0 4 $14 %11111110
+	c1541 $(D71) -bam 1 1
 	c1541 -attach $(D71) -write vdcse.prg vdcse
 	c1541 -attach $(D71) -write vdcse.maco.prg vdcse.maco
 	c1541 -attach $(D71) -write vdcse.falt.prg vdcse.falt
@@ -73,7 +79,10 @@ $(D71):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D71) -write vdcse.hsc4.prg vdcse.hsc4
 
 $(D81):	$(MAIN) $(OBJECTS)
-	c1541 -format "vdc screen edit,xm" d81 $(D81)
+	c1541 -format "vdcse,xm" d81 $(D81)
+	c1541 $(D81) -bwrite bootsect.bin 1 0
+	c1541 $(D81) -bpoke 40 1 16 $27 %11111110
+	c1541 $(D81) -bam 1 1
 	c1541 -attach $(D81) -write vdcse.prg vdcse
 	c1541 -attach $(D81) -write vdcse.maco.prg vdcse.maco
 	c1541 -attach $(D81) -write vdcse.falt.prg vdcse.falt
@@ -93,8 +102,8 @@ clean:
 # To deploy software to UII+ enter make deploy. Obviously C128 needs to powered on with UII+ and USB drive connected.
 deploy: $(MAIN)
 	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST)
-#	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST2)
+	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST2)
 
 # To run software in VICE
-vice: $(D64)
-	x128 -autostart $(D64)
+vice: $(D81)
+	x128 -autostart $(D81)

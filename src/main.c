@@ -151,6 +151,7 @@ unsigned char plotunderline;
 unsigned char plotblink;
 unsigned char plotaltchar;
 unsigned int select_startx, select_starty, select_endx, select_endy, select_width, select_height, select_accept;
+unsigned char favourites[10][2];
 
 char buffer[81];
 char version[22];
@@ -1857,6 +1858,158 @@ void chareditor()
         VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,255);
     }
 
+    plotscreencode = char_screencode;
+    plotaltchar = char_altorstd;
+    textcolor(vdctoconiocol[plotcolor]);
+    gotoxy(screen_col,screen_row);
+    VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+}
+
+void palette_draw()
+{
+    // Draw window for character palette
+
+    unsigned char attribute = mc_menupopup-VDC_A_ALTCHAR;
+    unsigned char x,y;
+
+    windowsave(0,21,0);
+    VDC_FillArea(0,45,CH_SPACE,34,21,attribute);
+    textcolor(vdctoconiocol[mc_menupopup & 0x0f]);
+
+    // Favourites palette
+    for(x=0;x<10;x++)
+    {
+        VDC_Plot(1,46+x,favourites[x][0],attribute+favourites[x][1]*VDC_A_ALTCHAR);
+    }
+
+    // Full charsets
+    for(y=0;y<8;y++)
+    {
+        for(x=0;x<32;x++)
+        {
+            VDC_Plot( 3+y,46+x,x+(y*32),attribute);
+            VDC_Plot(12+y,46+x,x+(y*32),attribute+VDC_A_ALTCHAR);
+        }
+    }
+}
+
+void palette()
+{
+    // Show character set palette
+
+    unsigned char attribute = mc_menupopup-VDC_A_ALTCHAR;
+    unsigned char key,rowsel,colsel;
+
+    // Set position at present plot character
+    rowsel = plotscreencode/32 + plotaltchar*9 + 2;
+    colsel = plotscreencode%32;    
+
+    palette_draw();
+    gotoxy(46+colsel,1+rowsel);
+
+    // Get key loop
+    do
+    {
+        key=cgetc();
+
+        switch (key)
+        {
+        // Cursor movemenr
+        case CH_CURS_RIGHT:       
+        case CH_CURS_LEFT:
+        case CH_CURS_DOWN:
+        case CH_CURS_UP:
+            if(key==CH_CURS_RIGHT) { colsel++; }
+            if(key==CH_CURS_LEFT)
+            {
+                if(colsel>0)
+                {
+                    colsel--;
+                }
+                else
+                {
+                    colsel=31;
+                    if(rowsel>0)
+                    {
+                        rowsel--;
+                        if(rowsel==1 || rowsel==10) { rowsel--;}
+                        if(rowsel==0) { colsel=9; }
+                    }
+                    else
+                    {
+                        rowsel=18;
+                    }
+                }
+            }
+            if(key==CH_CURS_DOWN) { rowsel++; }
+            if(key==CH_CURS_UP)
+            {
+                if(rowsel>0)
+                {
+                    rowsel--;
+                    if(rowsel==1 || rowsel==10) { rowsel--;}
+                }
+                else
+                {
+                    rowsel=18;
+                }
+            }
+            if(colsel>9 && rowsel==0) { colsel=0; rowsel=2; }
+            if(colsel>31) { colsel=0; rowsel++; }
+            if(rowsel>18) { rowsel=0; }
+            if(rowsel==1 || rowsel==10) { rowsel++;}
+            gotoxy(46+colsel,1+rowsel);
+            break;
+
+        // Select character
+        case CH_SPACE:
+        case CH_ENTER:
+            if(rowsel==0)
+            {
+                plotscreencode = favourites[colsel][0];
+                plotaltchar = favourites[colsel][1];
+            }
+            if(rowsel>1 && rowsel<10)
+            {
+                plotscreencode = colsel + (rowsel-2)*32;
+                plotaltchar = 0;
+            }
+            if(rowsel>10)
+            {
+                plotscreencode = colsel + (rowsel-11)*32;
+                plotaltchar = 1;
+            }
+            key = CH_ESC;
+            break;
+
+        // Help screen
+        case CH_F8:
+            windowrestore(0);
+            helpscreen_load(2);
+            palette_draw();
+            break;
+        
+        default:
+            // Store in favourites
+            if(key>47 && key<58 && rowsel>0)
+            {
+                if(rowsel<10)
+                {
+                    favourites[key-48][0] = colsel + (rowsel-2)*32;
+                    favourites[key-48][1] = 0;
+                }
+                else
+                {
+                    favourites[key-48][0] = colsel + (rowsel-11)*32;
+                    favourites[key-48][1] = 1;
+                }
+                VDC_Plot(1,key-2,favourites[key-48][0],attribute+favourites[key-48][1]*VDC_A_ALTCHAR);
+            }
+            break;
+        }
+    } while (key != CH_ESC && key != CH_STOP);
+
+    windowrestore(0);
     textcolor(vdctoconiocol[plotcolor]);
     gotoxy(screen_col,screen_row);
     VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
@@ -2748,6 +2901,11 @@ void main()
             chareditor();
             break;
 
+        // Palette for character selection
+        case 'p':
+            palette();
+            break;
+
         // Grab underlying character and attributes
         case 'g':
             plotscreencode = PEEKB(screenmap_screenaddr(screen_row+yoffset,screen_col+xoffset,screenwidth),1);
@@ -2840,6 +2998,19 @@ void main()
             break;
         
         default:
+            // 0-9: Favourites select
+            if(key>47 && key<58)
+            {
+                plotscreencode = favourites[key-48][0];
+                plotaltchar = favourites[key-48][1];
+                VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
+            }
+            // Shift 1-9 or *: Store present character in favourites slot
+            if(key>32 && key<43)
+            {
+                favourites[key-33][0] = plotscreencode;
+                favourites[key-33][1] = plotaltchar;
+            }
             break;
         }
     } while (appexit==0);

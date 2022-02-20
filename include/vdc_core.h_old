@@ -54,9 +54,6 @@ extern unsigned char vdctoconiocol[16];
 // Defines for MMU modes, MMU $FF00 configuration values
 #define MMU_BANK0               0x3e  // Bank 0 with full RAM apart from I/O area
 #define MMU_BANK1               0x7e  // Bank 1 with full RAM apart from I/O area        
-#define MMU_BANK2               0x3f  // Bank 0 with full RAM
-#define MMU_BANK3               0x7f  // Bank 1 with full RAM
-extern unsigned char bankconfig[4];
 
 // Defines for scroll directions
 #define SCROLL_LEFT             0x01

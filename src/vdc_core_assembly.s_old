@@ -33,6 +33,7 @@
 	.export		_VDC_DetectVDCMemSize_core
 	.export		_VDC_SetExtendedVDCMemSize
 	.export		_VDC_CopyCharsetsfromROM
+	.export		_VDC_SetCursorMode_core
 	.export		_VDC_MemCopy_core
 	.export		_VDC_HChar_core
 	.export		_VDC_VChar_core
@@ -103,79 +104,6 @@ ZPtmp4:
 MemConfTmp:
 	.res	1
 
-; Generic helper routines
-
-; ------------------------------------------------------------------------------------------
-VDC_Read:
-; Function to do a VDC read and wait for ready status
-; Input:	X = register number
-; Output:	A = read value
-; ------------------------------------------------------------------------------------------
-
-	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
-notyetreadyread:						; Start of wait loop to wait for VDC status ready
-	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
-	bpl notyetreadyread                 ; Continue loop if status is not ready
-	lda VDC_DATA_REGISTER               ; Load data to A from VDC data register
-	rts
-
-; ------------------------------------------------------------------------------------------
-VDC_Write:
-; Function to do a VDC read and wait for ready status
-; Input:	X = register number
-; 			A = value to write
-; ------------------------------------------------------------------------------------------
-
-	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
-notyetreadywrite:						; Start of wait loop to wait for VDC status ready
-	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
-	bpl notyetreadywrite                ; Continue loop if status is not ready
-	sta VDC_DATA_REGISTER               ; Store A to VDC data
-	rts
-
-; ------------------------------------------------------------------------------------------
-SaveMMUandZP:
-; Function to safeguard memory configuration and ZP addresses and set selected MMU
-; Input:	_VDC_tmp3	= selected MMU config
-; Output:	MemConfTmp	= Temporary location to safeguard MMU config
-;		    ZPtmp1		= Temporary location to safeguard ZP $fb
-;			ZPtmp2		= Temporary location to safeguard ZP $fc
-; ------------------------------------------------------------------------------------------
-
-	; Safeguard memory configuration and set memory config to selected MMU config
-	lda	$ff00							; Obtain present memory configuration
-	sta MemConfTmp						; Store in temp location for safeguarding
-	lda _VDC_tmp3						; Obtain selected MMU config
-	sta $ff00							; Store selected MMU config
-	
-	; Store $FA and $FB addresses for safety to be restored at exit
-	lda $fb								; Obtain present value at $fb
-	sta ZPtmp1							; Store to be restored later
-	lda $fc								; Obtain present value at $fc
-	sta ZPtmp2							; Store to be restored later
-	rts
-
-; ------------------------------------------------------------------------------------------
-RestoreMMUandZP:
-; Function to restore memory configuration and ZP addresses and set selected MMU
-; Input:	MemConfTmp	= Temporary location to safeguard MMU config
-;		    ZPtmp1		= Temporary location to safeguard ZP $fb
-;			ZPtmp2		= Temporary location to safeguard ZP $fc
-; ------------------------------------------------------------------------------------------
-
-	; Restore $fb and $fc
-	lda ZPtmp1							; Obtain stored value of $fb
-	sta $fb								; Restore value
-	lda ZPtmp2							; Obtain stored value of $fc
-	sta $fc								; Restore value
-
-	; Restore memory configuration
-	lda MemConfTmp						; Obtain saved memory config
-	sta $ff00							; Restore memory config
-    rts
-
-; Core routines
-
 ; ------------------------------------------------------------------------------------------
 _VDC_ReadRegister_core:
 ; Function to read a VDC register
@@ -184,7 +112,11 @@ _VDC_ReadRegister_core:
 ; ------------------------------------------------------------------------------------------
 
 	ldx _VDC_regadd                     ; Load register address in X
-	jsr VDC_Read						; Read VDC
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetready:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetready                     ; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER               ; Load data to A from VDC data register
 	sta _VDC_regval                     ; Load A to return variable
     rts
 
@@ -197,7 +129,10 @@ _VDC_WriteRegister_core:
 
     ldx _VDC_regadd                     ; Load register address in X
 	lda _VDC_regval				        ; Load register value in A
-	jsr VDC_Write						; Write VDC
+notyetready2:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetready2                    ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
     rts
 
 ; ------------------------------------------------------------------------------------------
@@ -210,13 +145,25 @@ _VDC_Poke_core:
 
     ldx #$12                            ; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_addrh                      ; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddress:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddress			        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	inx		    						; Increase X for register 19 (VDC RAM address low)
 	lda _VDC_addrl      				; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddress:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER           	; Check status bit 7 of VDC address register
+	bpl waitlowaddress      			; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
-	lda _VDC_value       				; Load value to write in A
-	jsr VDC_Write						; Write VDC
+	lda _VDC_value       				; Load high byte of address in A
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvalue:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvalue       				; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
     rts
 
 ; ------------------------------------------------------------------------------------------
@@ -229,12 +176,24 @@ _VDC_Peek_core:
 
     ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_addrh      				; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waithighaddress2:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddress2        		; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
 	inx					    			; Increase X for register 19 (VDC RAM address low)
 	lda _VDC_addrl	    	    		; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddress2:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitlowaddress2			        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
-	jsr VDC_Read						; Read VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvalue2:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvalue2			        	; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER	        	; Load VDC data to A
 	sta _VDC_value			        	; Load A to return variable
     rts
 
@@ -247,42 +206,86 @@ _VDC_DetectVDCMemSize_core:
 	; Setting memory mode to 64KB
 	; Reading register 28, safeguarding value, setting bit 4 and storing back to register 28
 	ldx #$1c							; Load $1c for register 28 in X
-	jsr VDC_Read						; Read VDC
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadydms1:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadydms1                 ; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER               ; Load data to A from VDC data register
 	tay									; Transfer A to Y to save value for later restore
 	ora #$10							; Set bit 4 of A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadydms2:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadydms2                 ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
 
 	; Writing a $00 value to VDC $1fff
 	ldx #$12                            ; Load $12 for register 18 (VDC RAM address high) in X	
 	lda #$1f                    		; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddressdms1:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddressdms1		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	inx		    						; Increase X for register 19 (VDC RAM address low)
 	lda #$ff      						; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddressdms1:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER           	; Check status bit 7 of VDC address register
+	bpl waitlowaddressdms1    			; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
 	lda #$00       						; Load value to store in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvaluedms1:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluedms1     				; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
 
 	; Writing a $ff value to VDC $9fff
 	ldx #$12                            ; Load $12 for register 18 (VDC RAM address high) in X	
 	lda #$9f                    		; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddressdms2:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddressdms2		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	inx		    						; Increase X for register 19 (VDC RAM address low)
 	lda #$ff      						; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddressdms2:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER           	; Check status bit 7 of VDC address register
+	bpl waitlowaddressdms2    			; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
 	lda #$ff       						; Load value to store in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvaluedms2:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluedms2     				; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
 
 	; Reading back value of VDC $1fff
     ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda #$1f		     				; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waithighaddressdms3:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddressdms3        		; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
 	inx					    			; Increase X for register 19 (VDC RAM address low)
 	lda #$ff    	    				; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddressdms3:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitlowaddressdms3			    ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
-	jsr VDC_Read						; Read VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvaluedms3:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluedms3		        	; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER	        	; Load VDC data to A
 
 	; Comparing value with $ff to see if 64KB address could be read
 	bne sixteendetected					; If not equal 16KB detected, so branch
@@ -296,7 +299,11 @@ dmsend:									; Label for end of routine
 	sta _VDC_value						; Load KB size to return value
 	tya									; Transfer value stored in Y back to A
 	ldx #$1c							; Store $1c in A for register 28
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadydms3:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadydms3                 ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
 	rts									; Return
 
 ; ------------------------------------------------------------------------------------------
@@ -308,9 +315,17 @@ _VDC_SetExtendedVDCMemSize:
 	; Setting memory mode to 64KB
 	; Reading register 28, safeguarding value, setting bit 4 and storing back to register 28
 	ldx #$1c							; Load $1c for register 28 in X
-	jsr VDC_Read						; Read VDCregister
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadysev1:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadysev1	                ; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER               ; Load data to A from VDC data register
 	ora #$10							; Set bit 4 of A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER            ; Store X in VDC address register
+notyetreadysev2:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER            ; Check status bit 7 of VDC address register
+	bpl notyetreadysev2                 ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
 	rts
 
 ; ------------------------------------------------------------------------------------------
@@ -322,6 +337,33 @@ _VDC_CopyCharsetsfromROM:
 	; Kernal call to DLCHR kernal function to copy charsets from ROM to VDC
 	jsr	$FF62							;initialize 8563 char. defns.
 	rts
+
+; ------------------------------------------------------------------------------------------
+_VDC_SetCursorMode_core:
+; Function to set cursor mode
+; Input:	VDC_value = Cursormode value
+; ------------------------------------------------------------------------------------------
+
+	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
+	lda #$00		      				; Load zero
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waithighaddresscm:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waithighaddresscm        		; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
+	inx					    			; Increase X for register 19 (VDC RAM address low)
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitlowaddresscm:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitlowaddresscm		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
+	ldx #$0A							; Load $0A for register 10 in X
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvaluecm:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluecm       				; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER               ; Store A to VDC data
+    rts
 
 ; ------------------------------------------------------------------------------------------
 _VDC_MemCopy_core:
@@ -338,27 +380,47 @@ loopmemcpy:
 	; Hi-byte of the destination address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_desth      				; Load high byte of dest in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitdesthighaddress:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitdesthighaddress     		; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
 
 	; Lo-byte of the destination address to register 19
 	ldx #$13    						; Load $13 for register 19 (VDC RAM address high) in X	
 	lda _VDC_destl       				; Load high byte of dest in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitdestlowaddress:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitdestlowaddress	        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Set the copy bit (bit 7) of register 24 (block copy mode)
 	ldx #$18    						; Load $18 for register 24 (block copy mode) in X	
 	lda #$80			        		; Set copy bit
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitsetcopybit:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitsetcopybit		        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Hi-byte of the source address to block copy source register 32
 	ldx #$20					    	; Load $20 for register 32 (block copy source) in X	
 	lda _VDC_addrh			        	; Load high byte of source in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitsrchighaddress:				    	; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitsrchighaddress		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	
 	; Lo-byte of the source address to block copy source register 33
 	ldx #$21					    	; Load $21 for register 33 (block copy source) in X	
 	lda _VDC_addrl		        		; Load low byte of source in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitsrclowaddress:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitsrclowaddress		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	
 	; Number of bytes to copy
 	ldx #$1E    						; Load $1E for register 30 (word count) in X
@@ -370,7 +432,11 @@ loopmemcpy:
 notyetlastpage:							; Label for not yet last page
 	lda #$ff    						; Set length for 256 bytes
 lastpage:								; Label for jmp if last page
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitsetlength:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitsetlength		        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Decrease page counter and loop until last page
 	inc _VDC_desth		        		; Increase destination address page counter
@@ -392,27 +458,47 @@ _VDC_HChar_core:
 	; Hi-byte of the destination address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_addrh	        			; Load high byte of start in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitstarthighaddress:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitstarthighaddress	        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 
 	; Lo-byte of the destination address to register 19
 	ldx #$13    						; Load $13 for register 19 (VDC RAM address high) in X	
 	lda _VDC_addrl		        		; Load high byte of start in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitstartlowaddress:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitstartlowaddress		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 
 	; Store character to write in data register 31
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
 	lda _VDC_tmp1			        	; Load character value in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvalue4:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitvalue4			        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Clear the copy bit (bit 7) of register 24 (block copy mode)
 	ldx #$18    						; Load $18 for register 24 (block copy mode) in X	
 	lda #$00				        	; Load 0 in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitclearcopybit:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitclearcopybit		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 
 	; Store lenth in data register 30
 	ldx #$1e    						; Load $1f for register 30 (word count) in X	
 	lda _VDC_tmp2			        	; Load character value in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitlength:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitlength			        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Continue with copying attribute values
 	clc									; Clear carry
@@ -421,27 +507,47 @@ _VDC_HChar_core:
 
 	; Hi-byte of the destination attribute address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitstarthigatthaddress:				; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitstarthigatthaddress	        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 
 	; Lo-byte of the destination attribute address to register 19
 	ldx #$13    						; Load $13 for register 19 (VDC RAM address high) in X	
 	lda _VDC_addrl		        		; Load high byte of start in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitstartlowattaddress:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitstartlowattaddress		    ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 
 	; Store attribute to write in data register 31
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
 	lda _VDC_tmp3			        	; Load attribute value in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvalueatt:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitvalueatt			       	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Clear the copy bit (bit 7) of register 24 (block copy mode)
 	ldx #$18    						; Load $18 for register 24 (block copy mode) in X	
 	lda #$00				        	; Load prepared value with bit 7 set in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitclearcopybitatt:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitclearcopybitatt		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 
 	; Store lenth in data register 30
 	ldx #$1e    						; Load $1f for register 30 (word count) in X	
 	lda _VDC_tmp2			        	; Load character value in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitlengthatt:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitlengthatt			       	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
     rts
 
 ; ------------------------------------------------------------------------------------------
@@ -458,17 +564,29 @@ loopvchar:
 	; Hi-byte of the destination address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_addrh		        		; Load high byte of start in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitstarthighaddress1:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitstarthighaddress1        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 
 	; Lo-byte of the destination address to register 19
 	ldx #$13    						; Load $13 for register 19 (VDC RAM address high) in X	
 	lda _VDC_addrl			        	; Load high byte of start in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitstartlowaddress1:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitstartlowaddress1        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Store character to write in data register 31
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
 	lda _VDC_tmp1			        	; Load character value in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvalue5:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvalue5			        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER           	; Store A to VDC data
 
 	; Continue with attribute value
 	clc									; CLear carry
@@ -477,17 +595,29 @@ loopvchar:
 
 	; Hi-byte of the destination attribute address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitstarthighattaddress1:				; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitstarthighattaddress1       	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER		        ; Store A to VDC data
 
 	; Lo-byte of the destination attribute address to register 19
 	ldx #$13    						; Load $13 for register 19 (VDC RAM address high) in X	
 	lda _VDC_addrl			        	; Load high byte of start in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitstartlowattaddress1:				; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitstartlowattaddress1        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Store attribute to write in data register 31
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X	
 	lda _VDC_tmp3			        	; Load attribute value in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvalueatt5:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvalueatt5		        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER           	; Store A to VDC data
 
 	; Increase start address with 80 for next line
 	clc 								; Clear carry
@@ -515,7 +645,17 @@ _VDC_CopyMemToVDC_core:
 ;			VDC_tmp3 = MMU config of source
 ; ------------------------------------------------------------------------------------------
 
-	jsr SaveMMUandZP					; Safeguard MMU/ZP and set MMU
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+	lda _VDC_tmp3						; Obtain selected MMU config
+	sta $ff00							; Store selected MMU config
+	
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
 
 	; Set address pointer in zero-page
 	lda _VDC_addrl						; Obtain low byte in A
@@ -526,12 +666,20 @@ _VDC_CopyMemToVDC_core:
 	; Hi-byte of the source VDC address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_desth		        		; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddressm2v:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waithighaddressm2v	        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Low-byte of the source VDC address to register 19
 	inx 								; Increase X for register 19 (VDC RAM address low)
 	lda _VDC_destl      				; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitlowaddressm2v:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitlowaddressm2v	        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Start of copy loop
 	ldy #$00    						; Set Y as counter on 0
@@ -540,7 +688,11 @@ _VDC_CopyMemToVDC_core:
 copyloopm2v:							; Start of copy loop
 	lda ($fb),y							; Load source data
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvaluem2v:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluem2v		        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Increase source address (VDC auto increments)
 	inc $fb								; Increment low byte of source address
@@ -556,8 +708,16 @@ nextm2v1:								; Next label
 	cmp #$ff							; Check if below zero
 	bne copyloopm2v						; Continue loop if not yet below zero
 
-	jsr RestoreMMUandZP					; Restore MU/ZP
-	rts
+; Restore $fb and $fc
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+
+; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
+    rts
 
 ; ------------------------------------------------------------------------------------------
 _VDC_CopyVDCToMem_core:
@@ -571,7 +731,17 @@ _VDC_CopyVDCToMem_core:
 ;			VDC_tmp3 = memory bank of destination
 ; ------------------------------------------------------------------------------------------
 
-	jsr SaveMMUandZP					; Safeguard MMU/ZP and set MMU
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+	lda _VDC_tmp3						; Obtain selected MMU config
+	sta $ff00							; Store selected MMU config
+		
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
 
 	; Set address pointer in zero-page and STAVEC vector
 	lda _VDC_destl						; Obtain low byte in A
@@ -589,16 +759,28 @@ copyloopv2m:							; Start of copy loop
 	; Hi-byte of the source VDC address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_addrh		        		; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddressv2m:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waithighaddressv2m	        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Low-byte of the source VDC address to register 19
 	inx 								; Increase X for register 19 (VDC RAM address low)
 	lda _VDC_addrl      				; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitlowaddressv2m:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitlowaddressv2m	        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	
 	; Read VDC value and store at destination address
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X
-	jsr VDC_Read						; Read VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvaluev2m:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluev2m		        	; Continue loop if status is not ready
+	lda VDC_DATA_REGISTER	        	; Read VDC data to A
 	sta ($fb),y							; Store in target memory
 
 	; Increase VDC source address and target memory address
@@ -619,7 +801,15 @@ nextv2m2:								; Next label
 	cmp #$ff							; Check if below zero
 	bne copyloopv2m						; Continue loop if not yet below zero
 
-	jsr RestoreMMUandZP					; Restore MU/ZP
+; Restore $fb and $fc
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+	
+; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
     rts
 
 ; ------------------------------------------------------------------------------------------
@@ -633,7 +823,17 @@ _VDC_RedefineCharset_core:
 ;			VDC_tmp1 = lengthinchars;				// Obtain number of characters to copy
 ; ------------------------------------------------------------------------------------------
 
-	jsr SaveMMUandZP					; Safeguard MMU/ZP and set MMU
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+	lda _VDC_tmp2						; Obtain selected MMU config
+	sta $ff00							; Store selected MMU config
+	
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
 
 	; Set address pointer in zero-page
 	lda _VDC_addrl						; Obtain low byte in A
@@ -644,12 +844,20 @@ _VDC_RedefineCharset_core:
 	; Hi-byte of the destination VDC address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_desth		        		; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddress4:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waithighaddress4	        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Low-byte of the destination VDC address to register 19
 	inx 								; Increase X for register 19 (VDC RAM address low)
 	lda _VDC_destl      				; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitlowaddress4:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitlowaddress4		        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Start of copy loop
 	ldy #$00    						; Set Y as counter on 0
@@ -659,7 +867,11 @@ looprc1:								; Start of outer loop
 looprc2:								; Start of 8 bytes character copy loop
 	lda ($fb),y							; Load from source address
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvalue6:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvalue6			        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Count 8 bytes per char
 	iny 								; Increase Y counter
@@ -669,7 +881,11 @@ looprc2:								; Start of 8 bytes character copy loop
 	; Add 8 bytes of zero padding per char
 	lda #$00    						; Set 0 value to use as padding in A
 looprc3:								; Start of padding loop
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvalue7:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitvalue7			        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	dey 								; Decrease Y counter
 	bne looprc3		        			; Continue padding looop if counter is not yet zero
 
@@ -689,7 +905,11 @@ looprc3:								; Start of padding loop
 looprc4:								; Start of 8 bytes character copy loop
 	lda ($fb),y							; Load from source address
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvalue8:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvalue8			        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Count 8 bytes per char
 	iny 								; Increase Y counter
@@ -699,11 +919,23 @@ looprc4:								; Start of 8 bytes character copy loop
 ; Add 8 bytes of zero padding per char
 	lda #$00    						; Set 0 value to use as padding in A
 looprc5:								; Start of padding loop
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitvalue9:								; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitvalue9			        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	dey 								; Decrease Y counter
 	bne looprc5		        			; Continue padding looop if counter is not yet zero
 
-	jsr RestoreMMUandZP					; Restore MU/ZP
+; Restore $fb and $fc
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+	
+; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
 	rts
 
 ; ------------------------------------------------------------------------------------------
@@ -748,7 +980,17 @@ _VDC_CopyViewPortToVDC_core:
 ;			VDC_tmp3 = MMU config of source
 ; ------------------------------------------------------------------------------------------
 
-	jsr SaveMMUandZP					; Safeguard MMU/ZP and set MMU
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+	lda _VDC_tmp3						; Obtain selected MMU config
+	sta $ff00							; Store selected MMU config
+	
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
 
 	; Set address pointer in zero-page
 	lda _VDC_addrl						; Obtain low byte in A
@@ -765,18 +1007,30 @@ outerloopvp:							; Start of outer loop
 	; Hi-byte of the source VDC address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_desth		        		; Load high byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waithighaddressvp:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waithighaddressvp	        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Low-byte of the source VDC address to register 19
 	inx 								; Increase X for register 19 (VDC RAM address low)
 	lda _VDC_destl      				; Load low byte of address in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitlowaddressvp:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitlowaddressvp	        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Read value and store at VDC address
 copyloopvp:								; Start of copy loop
 	lda ($fb),y							; Load source data
 	ldx #$1f    						; Load $1f for register 31 (VDC data) in X
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitvaluevp:							; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitvaluevp		     		   	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Increase source address (VDC auto increments)
 	inc $fb								; Increment low byte of source address
@@ -808,7 +1062,15 @@ nextvp1:								; Next label
 	cmp #$ff							; Check if below zero
 	bne outerloopvp						; Continue outer loop if not yet below zero
 
-	jsr RestoreMMUandZP					; Restore MU/ZP
+; Restore $fb and $fc
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+
+; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
     rts
 
 ; ------------------------------------------------------------------------------------------
@@ -826,32 +1088,56 @@ loopscrollcpy:
 	; Hi-byte of the destination address to register 18
 	ldx #$12    						; Load $12 for register 18 (VDC RAM address high) in X	
 	lda _VDC_desth      				; Load high byte of dest in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitdesthighaddresssc:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitdesthighaddresssc     		; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER       		; Store A to VDC data
 
 	; Lo-byte of the destination address to register 19
 	ldx #$13    						; Load $13 for register 19 (VDC RAM address high) in X	
 	lda _VDC_destl       				; Load high byte of dest in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitdestlowaddresssc:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitdestlowaddresssc	       	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Set the copy bit (bit 7) of register 24 (block copy mode)
 	ldx #$18    						; Load $18 for register 24 (block copy mode) in X	
 	lda #$80			        		; Load prepared value with bit 7 set in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitsetcopybitsc:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitsetcopybitsc		       	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Hi-byte of the source address to block copy source register 32
 	ldx #$20					    	; Load $20 for register 32 (block copy source) in X	
 	lda _VDC_addrh			        	; Load high byte of source in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitsrchighaddresssc:			    	; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitsrchighaddresssc	        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 	
 	; Lo-byte of the source address to block copy source register 33
 	ldx #$21					    	; Load $21 for register 33 (block copy source) in X	
 	lda _VDC_addrl		        		; Load low byte of source in A
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER        	; Store X in VDC address register
+waitsrclowaddresssc:					; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER        	; Check status bit 7 of VDC address register
+	bpl waitsrclowaddresssc		        ; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Number of bytes to copy
 	ldx #$1E    						; Load $1E for register 30 (word count) in X
 	lda _VDC_tmp2		        		; Set length
-	jsr VDC_Write						; Write VDC
+	stx VDC_ADDRESS_REGISTER	        ; Store X in VDC address register
+waitsetlengthsc:						; Start of wait loop to wait for VDC status ready
+	bit VDC_ADDRESS_REGISTER	        ; Check status bit 7 of VDC address register
+	bpl waitsetlengthsc		        	; Continue loop if status is not ready
+	sta VDC_DATA_REGISTER	        	; Store A to VDC data
 
 	; Increase destination address for one line
 	clc									; Clear carry
@@ -894,11 +1180,21 @@ _SetLoadSaveBank_core:
 _POKEB_core:
 ; Function to poke to a memory position in specified bank
 ; Input:	VDC_addrh and VDC_addrl:	high and low byte of address to poke
-;			VDC_tmp3:					MMU config for poke
+;			VDC_tmp1:					MMU config for poke
 ;			VDC_value:					value to poke
 ; ------------------------------------------------------------------------------------------
 
-	jsr SaveMMUandZP					; Safeguard MMU/ZP and set MMU
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+	lda _VDC_tmp1						; Obtain selected MMU config
+	sta $ff00							; Store selected MMU config
+
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
 
 	; Set address pointer in zero-page
 	lda _VDC_addrl						; Obtain low byte in A
@@ -911,18 +1207,36 @@ _POKEB_core:
 	lda _VDC_value						; Load value in A
 	sta ($fb),y							; Store at destination
 
-	jsr RestoreMMUandZP					; Restore MU/ZP
+	; Restore $fb and $fc
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+
+	; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
     rts
 
 ; ------------------------------------------------------------------------------------------
 _PEEKB_core:
 ; Function to peek a memory position in specified bank
 ; Input:	VDC_addrh and VDC_addrl:	high and low byte of address to peek
-;			VDC_tmp3:					MMU config for peek
+;			VDC_tmp1:					MMU config for peek
 ; Output:	VDC_value:					value peeked at address
 ; ------------------------------------------------------------------------------------------
 
-	jsr SaveMMUandZP					; Safeguard MMU/ZP and set MMU
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+	lda _VDC_tmp1						; Obtain selected MMU config
+	sta $ff00							; Store selected MMU config
+
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
 
 	; Set address pointer in zero-page
 	lda _VDC_addrl						; Obtain low byte in A
@@ -935,7 +1249,15 @@ _PEEKB_core:
 	lda ($fb),y							; Load value from source address
 	sta _VDC_value						; Store value in variable to return
 
-	jsr RestoreMMUandZP					; Restore MU/ZP
+	; Restore $fb and $fc
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+
+	; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
     rts
 
 ; ------------------------------------------------------------------------------------------
@@ -951,9 +1273,15 @@ _BankMemCopy_core:
 ;			VDC_tmp4 = MMU config of destination
 ; ------------------------------------------------------------------------------------------
 
-	jsr SaveMMUandZP					; Safeguard MMU/ZP and set MMU
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
 
-	; Store $FD and $FE addresses for safety to be restored at exit
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
 	lda $fd								; Obtain present value at $fc
 	sta ZPtmp3							; Store to be restored later
 	lda $fe								; Obtain present value at $fc
@@ -1010,12 +1338,18 @@ nextbmc2:								; Next label
 	bne copyloopbmc						; Continue loop if not yet below zero
 
 ; Restore ZP addresses
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
 	lda ZPtmp3							; Obtain stored value of $fd
 	sta $fd								; Restore value
 	lda ZPtmp4							; Obtain stored value of $fe
 	sta $fe								; Restore value
 
-	jsr RestoreMMUandZP					; Restore MU/ZP
+; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
     rts
 
 ; ------------------------------------------------------------------------------------------
@@ -1029,7 +1363,19 @@ _BankMemSet_core:
 ;			VDC_tmp3 = MMU config of source
 ; ------------------------------------------------------------------------------------------
 
-	jsr SaveMMUandZP					; Safeguard MMU/ZP and set MMU
+	; Safeguard memory configuration and set memory config to selected MMU config
+	lda	$ff00							; Obtain present memory configuration
+	sta MemConfTmp						; Store in temp location for safeguarding
+
+	; Set MMU configuration for source
+	lda _VDC_tmp3						; Obtain selected MMU config for source
+	sta $ff00							; Store selected MMU config for source
+
+	; Store $FA and $FB addresses for safety to be restored at exit
+	lda $fb								; Obtain present value at $fb
+	sta ZPtmp1							; Store to be restored later
+	lda $fc								; Obtain present value at $fc
+	sta ZPtmp2							; Store to be restored later
 
 	; Set source address pointer in zero-page
 	lda _VDC_addrl						; Obtain low byte in A
@@ -1061,5 +1407,13 @@ nextbms1:								; Next label
 	cmp #$ff							; Check if below zero
 	bne copyloopbms						; Continue loop if not yet below zero
 
-	jsr RestoreMMUandZP					; Restore MU/ZP
+; Restore ZP addresses
+	lda ZPtmp1							; Obtain stored value of $fb
+	sta $fb								; Restore value
+	lda ZPtmp2							; Obtain stored value of $fc
+	sta $fc								; Restore value
+
+; Restore memory configuration
+	lda MemConfTmp						; Obtain saved memory config
+	sta $ff00							; Restore memory config
     rts
