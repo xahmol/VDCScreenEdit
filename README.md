@@ -41,7 +41,7 @@ Commodore 128 80 column screen editor
 ## Version history and download
 ([Back to contents](#contents))
 
-[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220220-1608.zip)
+[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220220-2213.zip)
 
 Version 090-20220220-2213:
 - Added palette mode, including visual PETSCII mode
