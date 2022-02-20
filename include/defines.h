@@ -5,6 +5,9 @@
 #define MACOSTART           0x1300      // Start of machine code area
 #define MACOSIZE            0x0800      // Length of machine code area
 
+/* Address mapping for visual PETSCII map */
+#define PETSCIIMAP          0x0C00      // PETSCII map in RS232 buffer
+
 /* Bank 1 memory addresses mapping */
 #define WINDOWBASEADDRESS   0x2000      // Base address for windows system data, 8k reserved
 #define CHARSETSYSTEM       0x4000      // Base address for system charset

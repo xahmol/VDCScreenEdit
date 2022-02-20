@@ -151,6 +151,7 @@ unsigned char plotunderline;
 unsigned char plotblink;
 unsigned char plotaltchar;
 unsigned int select_startx, select_starty, select_endx, select_endy, select_width, select_height, select_accept;
+unsigned char rowsel, colsel, visualmap, palettechar;
 unsigned char favourites[10][2];
 
 char buffer[81];
@@ -1876,6 +1877,13 @@ void palette_draw()
     VDC_FillArea(0,45,CH_SPACE,34,21,attribute);
     textcolor(vdctoconiocol[mc_menupopup & 0x0f]);
 
+    // Set coordinate of present char if no visual map
+    if(visualmap==0 || plotaltchar)
+    {
+        rowsel = palettechar/32 + plotaltchar*9 + 2;
+        colsel = palettechar%32;
+    }
+
     // Favourites palette
     for(x=0;x<10;x++)
     {
@@ -1887,9 +1895,50 @@ void palette_draw()
     {
         for(x=0;x<32;x++)
         {
-            VDC_Plot( 3+y,46+x,x+(y*32),attribute);
+            if(visualmap)
+            {
+                VDC_Plot( 3+y,46+x,PEEK(PETSCIIMAP+x+(y*32)),attribute);
+                if(PEEK(PETSCIIMAP+x+(y*32))==palettechar)
+                {
+                    rowsel = y+2;
+                    colsel = x;
+                }
+            }
+            else
+            {
+                VDC_Plot( 3+y,46+x,x+(y*32),attribute);
+            }
             VDC_Plot(12+y,46+x,x+(y*32),attribute+VDC_A_ALTCHAR);
         }
+    }
+}
+
+void palette_returnscreencode()
+{
+    // Get screencode from palette position
+
+    if(rowsel==0)
+    {
+        palettechar = favourites[colsel][0];
+        plotaltchar = favourites[colsel][1];
+    }
+    if(rowsel>1 && rowsel<10)
+    {
+        if(visualmap)
+        {
+            palettechar = PEEK(PETSCIIMAP+colsel + (rowsel-2)*32);
+        }
+        else
+        {
+            palettechar = colsel + (rowsel-2)*32;
+        }
+        
+        plotaltchar = 0;
+    }
+    if(rowsel>10)
+    {
+        palettechar = colsel + (rowsel-11)*32;
+        plotaltchar = 1;
     }
 }
 
@@ -1898,11 +1947,10 @@ void palette()
     // Show character set palette
 
     unsigned char attribute = mc_menupopup-VDC_A_ALTCHAR;
-    unsigned char key,rowsel,colsel;
+    unsigned char key;
 
-    // Set position at present plot character
-    rowsel = plotscreencode/32 + plotaltchar*9 + 2;
-    colsel = plotscreencode%32;    
+    visualmap = 0;
+    palettechar = plotscreencode;
 
     palette_draw();
     gotoxy(46+colsel,1+rowsel);
@@ -1914,7 +1962,7 @@ void palette()
 
         switch (key)
         {
-        // Cursor movemenr
+        // Cursor movemeny
         case CH_CURS_RIGHT:       
         case CH_CURS_LEFT:
         case CH_CURS_DOWN:
@@ -1964,22 +2012,18 @@ void palette()
         // Select character
         case CH_SPACE:
         case CH_ENTER:
-            if(rowsel==0)
-            {
-                plotscreencode = favourites[colsel][0];
-                plotaltchar = favourites[colsel][1];
-            }
-            if(rowsel>1 && rowsel<10)
-            {
-                plotscreencode = colsel + (rowsel-2)*32;
-                plotaltchar = 0;
-            }
-            if(rowsel>10)
-            {
-                plotscreencode = colsel + (rowsel-11)*32;
-                plotaltchar = 1;
-            }
+            palette_returnscreencode();
+            plotscreencode = palettechar;
             key = CH_ESC;
+            break;
+
+        // Toggle visual PETSCII map
+        case 'v':
+            windowrestore(0);
+            palette_returnscreencode();
+            visualmap = (visualmap)?0:1;
+            palette_draw();
+            gotoxy(46+colsel,1+rowsel);
             break;
 
         // Help screen
@@ -1993,14 +2037,14 @@ void palette()
             // Store in favourites
             if(key>47 && key<58 && rowsel>0)
             {
+                palette_returnscreencode();
+                favourites[key-48][0] = palettechar;
                 if(rowsel<10)
                 {
-                    favourites[key-48][0] = colsel + (rowsel-2)*32;
                     favourites[key-48][1] = 0;
                 }
                 else
                 {
-                    favourites[key-48][0] = colsel + (rowsel-11)*32;
                     favourites[key-48][1] = 1;
                 }
                 VDC_Plot(1,key-2,favourites[key-48][0],attribute+favourites[key-48][1]*VDC_A_ALTCHAR);
@@ -2805,6 +2849,12 @@ void main()
     {
         VDC_CopyMemToVDC(VDCBASETEXT,SCREENMAPBASE,1,4048);
     }
+
+    // Load visual PETSCII map mapping data
+	cbm_k_setlfs(0,bootdevice, 0);
+	cbm_k_setnam("vdcse.petv");
+	SetLoadSaveBank(0);
+	cbm_k_load(0,PETSCIIMAP);
 
     // Load default charsets to bank 1
     VDC_LoadCharset("vdcse.falt",bootdevice, CHARSETSYSTEM, 1, 0);

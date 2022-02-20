@@ -12,8 +12,8 @@
 # - wput command installed: sudo apt-get install wput
 
 SOURCESMAIN = src/main.c src/vdc_core.c
-SOURCESLIB = src/vdc_core_assembly.s src/bootsect.s
-OBJECTS = bootsect.bin vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg
+SOURCESLIB = src/vdc_core_assembly.s src/bootsect.s src/visualpetscii.s
+OBJECTS = bootsect.bin vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg vdcse.petv.prg
 
 ZIP = vdcscreenedit-v090-$(shell date "+%Y%m%d-%H%M").zip
 D64 = vdcse.d64
@@ -62,6 +62,7 @@ $(D64):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D64) -write vdcse.hsc2.prg vdcse.hsc2
 	c1541 -attach $(D64) -write vdcse.hsc3.prg vdcse.hsc3
 	c1541 -attach $(D64) -write vdcse.hsc4.prg vdcse.hsc4
+	c1541 -attach $(D64) -write vdcse.petv.prg vdcse.petv	
 
 $(D71):	$(MAIN) $(OBJECTS)
 	c1541 -format "vdcse,xm" d71 $(D71)
@@ -77,6 +78,7 @@ $(D71):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D71) -write vdcse.hsc2.prg vdcse.hsc2
 	c1541 -attach $(D71) -write vdcse.hsc3.prg vdcse.hsc3
 	c1541 -attach $(D71) -write vdcse.hsc4.prg vdcse.hsc4
+	c1541 -attach $(D71) -write vdcse.petv.prg vdcse.petv
 
 $(D81):	$(MAIN) $(OBJECTS)
 	c1541 -format "vdcse,xm" d81 $(D81)
@@ -92,6 +94,7 @@ $(D81):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D81) -write vdcse.hsc2.prg vdcse.hsc2
 	c1541 -attach $(D81) -write vdcse.hsc3.prg vdcse.hsc3
 	c1541 -attach $(D81) -write vdcse.hsc4.prg vdcse.hsc4
+	c1541 -attach $(D81) -write vdcse.petv.prg vdcse.petv
 
 $(ZIP): $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(README)
 	zip $@ $^
