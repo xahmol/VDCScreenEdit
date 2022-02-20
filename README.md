@@ -15,6 +15,8 @@ Commodore 128 80 column screen editor
 
 [Character editor](#character-editor)
 
+[Palette mode](#palette-mode)
+
 [Select mode](#select-mode)
 
 [Move mode](#move-mode)
@@ -40,6 +42,14 @@ Commodore 128 80 column screen editor
 ([Back to contents](#contents))
 
 [Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220103-1000.zip)
+
+Version 090-20220220-1608:
+- Added palette mode
+- Added favorite slots
+- Changing selected character in the character editor now also changes selected character in main mode
+- Made the disk images bootable
+- Other minor optimizations
+- (thanks to jab / Artline Designs for hints and inspiration )
 
 Version 090-20220103-1000:
 - Bugfix for plotting not working with offsets bigger than zero
@@ -104,6 +114,9 @@ Press these keys in main mode for editing:
 |**Cursor keys**|Move cursor
 |**+**|Next character (increase screen code)
 |**-**|Previous character (decrease screen code)
+|**0-9**|Select character from favorite slot with corresponding number
+|**SHIFT + 1-9**|Store character to favorite slot with corresponding number
+|**\***|Store character to favorite slot with number 0 (shift 0 does not exist)
 |**,**|Previous color (decrease color number)
 |**.**|Next color (increase color number)
 |**SPACE**|Plot with present screen code and attributes
@@ -119,6 +132,7 @@ Press these keys in main mode for editing:
 |**L**|Go to '**L**ine and box mode'
 |**M**|Go to '**M**ove mode'
 |**S**|Go to '**S**elect mode'
+|**P**|Go to '**P**alette mode'
 |**Z**|Undo
 |**Y**|Redo
 |**I**|Toggle '**I**nverse': toggle increase/decrease screencode by 128
@@ -137,6 +151,14 @@ Pressing **HOME** will return the cursor to the upper left position.
 The **+** or **-** key will increase resp. decrease the selected [screencode](https://sta.c64.org/cbm64scr.html) by one. The cursor will update to the presently selected [screencode](https://sta.c64.org/cbm64scr.html).
 
 Pressing **I** will increase the [screencode](https://sta.c64.org/cbm64scr.html) by 128 if the present [screencode](https://sta.c64.org/cbm64scr.html) is lower than 128, otherwise decrease by 128. This will emulate RVS On / RVS Off.
+
+*Selecting the [screencode](https://sta.c64.org/cbm64scr.html) to plot from a favotite slot*
+
+In VDCSE 10 positions are available to store your most frequently used characters in. Pressing one of the **0-9** keys selects the favorite with the corresponding number.
+
+*Storing the present [screencode](https://sta.c64.org/cbm64scr.html) to a favorite slot*
+
+Pressing **SHIFT** plus **1-9** stores the presently selected character to the corresponding favorite slot. As SHIFT+0 is the same as 0 on the C128, press **\*** for favorite position 0.
 
 *Selecting the attributes to plot*
 
@@ -348,6 +370,41 @@ Press **H** to edit the full present row of the grid by entering the hex value o
 *Leave mode and help*
 
 Pressing **ESC** or **STOP** leaves the character mode and returns to main mode. **F8** will show a help screen with all keyboard commands of the character mode.
+
+## Palette mode:
+([Back to contents](#contents))
+
+Pressing **P** in the main mode starts the Palette mode. In this mode a character for plotting can be selected from the full set of the two character sets and the 10 favorite slots.
+
+A window like this appears:
+
+![Palette mode screenshot](https://github.com/xahmol/VDCScreenEdit/blob/main/screenshots/VDCSE%20Palette.png?raw=true)
+
+The window shows the 10 favorite slots as first line, below that the standard character set and below that the alternate character set.
+
+Keyboard commands in this mode:
+
+|Key|Description
+|---|---|
+|**Cursor keys**|Move cursor
+|**SPACE or ENTER**|Select character
+|**0-9**|Store character in corresponding favorite slot
+|**ESC** / **STOP**|Leave character mode and go back to main mode
+|**F8**|Help screen
+
+*Moving cursor*
+
+Press the **cursor keys** to move the cursor around the grid. You can move over to the different sections by just moving out of a section to the other.
+
+*Selecting character*
+Press **SPACE** or **ENTER** to select the hightlighted characters as new character to plot with. This leaves the palette mode.
+
+*Storing to a favorite slot*
+Pessing **0-9** stores the presently highlighted character to the corresponding favorite slot.
+
+*Leave mode and help*
+
+Pressing **ESC** or **STOP** leaves the palette mode and returns to main mode. **F8** will show a help screen with all keyboard commands of the character mode.
 
 ## Select mode:
 ([Back to contents](#contents))
