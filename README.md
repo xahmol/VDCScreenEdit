@@ -679,6 +679,8 @@ Code and resources from others used:
 
 -   Bart van Leeuwen: For inspiration and advice while coding. Also for providing the excellent Device Manager ROM to make testing on real hardware very easy
 
+-   jab / Artline Designs (Jaakko Luoto) for inspiration for Palette mode and PETSCII visual mode
+
 -   Original windowing system code on Commodore 128 by unknown author.
    
 -   Tested using real hardware (C128D and C128DCR) plus VICE.
