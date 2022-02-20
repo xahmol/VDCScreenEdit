@@ -43,8 +43,8 @@ Commodore 128 80 column screen editor
 
 [Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220220-1608.zip)
 
-Version 090-20220220-1608:
-- Added palette mode
+Version 090-20220220-2213:
+- Added palette mode, including visual PETSCII mode
 - Added favorite slots
 - Changing selected character in the character editor now also changes selected character in main mode
 - Made the disk images bootable
@@ -389,6 +389,7 @@ Keyboard commands in this mode:
 |**Cursor keys**|Move cursor
 |**SPACE or ENTER**|Select character
 |**0-9**|Store character in corresponding favorite slot
+|**V**|Toggle between normal mode and visual PETSCII mode
 |**ESC** / **STOP**|Leave character mode and go back to main mode
 |**F8**|Help screen
 
@@ -397,10 +398,22 @@ Keyboard commands in this mode:
 Press the **cursor keys** to move the cursor around the grid. You can move over to the different sections by just moving out of a section to the other.
 
 *Selecting character*
+
 Press **SPACE** or **ENTER** to select the hightlighted characters as new character to plot with. This leaves the palette mode.
 
 *Storing to a favorite slot*
+
 Pessing **0-9** stores the presently highlighted character to the corresponding favorite slot.
+
+*Toggle visual PETSCII mode*
+
+Visual PETSCII mode is a mode in which the palette for the standard charset is mapped in such a way that PETSCII characters are ordered in a logical order for drawing. This mode makes only sense for standard charsets that left the PETSCII drawing characters unchanged.
+
+This looks like this:
+
+![Visual PETSCII palette](https://raw.githubusercontent.com/xahmol/VDCScreenEdit/main/screenshots/VDCSE%20Palette%20Visual.png)
+
+Pressing **V** toggles between normal and visual mode.
 
 *Leave mode and help*
 
