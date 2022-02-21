@@ -153,7 +153,10 @@ unsigned char plotunderline;
 unsigned char plotblink;
 unsigned char plotaltchar;
 unsigned int select_startx, select_starty, select_endx, select_endy, select_width, select_height, select_accept;
-unsigned char rowsel, colsel, visualmap, palettechar;
+unsigned char rowsel = 0;
+unsigned char colsel = 0;
+unsigned char palettechar;
+unsigned char visualmap = 0;
 unsigned char favourites[10][2];
 
 char buffer[81];
@@ -1541,6 +1544,8 @@ void chareditor()
     unsigned char char_undo[8];
     unsigned char char_buffer[8];
     unsigned int char_address;
+    unsigned char charchanged = 0;
+    unsigned char altchanged = 0;
     char* ptrend;
 
     char_altorstd = plotaltchar;
@@ -1606,13 +1611,7 @@ void chareditor()
             {
                 char_screencode--;
             }
-            char_address = charaddress(char_screencode,char_altorstd,0);
-            for(y=0;y<8;y++)
-            {
-                char_present[y]=VDC_Peek(char_address+y);
-                char_undo[y]=char_present[y];
-            }
-            showchareditgrid(char_screencode, char_altorstd);
+            charchanged=1;
             break;
 
         // Toggle bit
@@ -1689,20 +1688,7 @@ void chareditor()
         // Switch charset
         case 'a':
             char_altorstd = (char_altorstd==0)? 1:0;
-            if(char_altorstd==0)
-            {
-                VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,255);
-                VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,255);
-            }
-            else
-            {
-                VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
-                VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARSTD,255);
-            }
-            charsetchanged[char_altorstd]=1;
-            windowrestore(0);
-            showchareditfield(char_altorstd);
-            showchareditgrid(char_screencode, char_altorstd);
+            altchanged=1;
             break;
 
         // Mirror y axis
@@ -1846,7 +1832,53 @@ void chareditor()
             break;
 
         default:
+            // 0-9: Favourites select
+            if(key>47 && key<58)
+            {
+                char_screencode = favourites[key-48][0];
+                char_altorstd = favourites[key-48][1];
+                charchanged=1;
+                altchanged=1;
+            }
+            // Shift 1-9 or *: Store present character in favourites slot
+            if(key>32 && key<43)
+            {
+                favourites[key-33][0] = char_screencode;
+                favourites[key-33][1] = char_altorstd;
+            }
             break;
+        }
+
+        if(charchanged || altchanged)
+        {
+            if(charchanged)
+            {
+                charchanged=0;
+                char_address = charaddress(char_screencode,char_altorstd,0);
+                for(y=0;y<8;y++)
+                {
+                    char_present[y]=VDC_Peek(char_address+y);
+                    char_undo[y]=char_present[y];
+                }
+            }
+            if(altchanged)
+            {
+                altchanged=0;
+                if(char_altorstd==0)
+                {
+                    VDC_RedefineCharset(CHARSETNORMAL,1,VDCCHARSTD,255);
+                    VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARALT,255);
+                }
+                else
+                {
+                    VDC_RedefineCharset(CHARSETALTERNATE,1,VDCCHARALT,255);
+                    VDC_RedefineCharset(CHARSETSYSTEM,1,VDCCHARSTD,255);
+                }
+                charsetchanged[char_altorstd]=1;
+                windowrestore(0);
+                showchareditfield(char_altorstd);
+            }
+            showchareditgrid(char_screencode, char_altorstd);
         }
     } while (key != CH_ESC && key != CH_STOP);
 
@@ -1874,6 +1906,8 @@ void palette_draw()
 
     unsigned char attribute = mc_menupopup-VDC_A_ALTCHAR;
     unsigned char x,y;
+    unsigned char counter = 0;
+    unsigned int petsciiaddress = PETSCIIMAP;
 
     windowsave(0,21,0);
     VDC_FillArea(0,45,CH_SPACE,34,21,attribute);
@@ -1899,8 +1933,8 @@ void palette_draw()
         {
             if(visualmap)
             {
-                VDC_Plot( 3+y,46+x,PEEK(PETSCIIMAP+x+(y*32)),attribute);
-                if(PEEK(PETSCIIMAP+x+(y*32))==palettechar)
+                VDC_Plot( 3+y,46+x,PEEK(petsciiaddress),attribute);
+                if(PEEK(petsciiaddress++)==palettechar)
                 {
                     rowsel = y+2;
                     colsel = x;
@@ -1908,9 +1942,10 @@ void palette_draw()
             }
             else
             {
-                VDC_Plot( 3+y,46+x,x+(y*32),attribute);
+                VDC_Plot( 3+y,46+x,counter,attribute);
             }
-            VDC_Plot(12+y,46+x,x+(y*32),attribute+VDC_A_ALTCHAR);
+            VDC_Plot(12+y,46+x,counter,attribute+VDC_A_ALTCHAR);
+            counter++;
         }
     }
 }
@@ -1951,7 +1986,6 @@ void palette()
     unsigned char attribute = mc_menupopup-VDC_A_ALTCHAR;
     unsigned char key;
 
-    visualmap = 0;
     palettechar = plotscreencode;
 
     palette_draw();

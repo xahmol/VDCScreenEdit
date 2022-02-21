@@ -41,9 +41,9 @@ Commodore 128 80 column screen editor
 ## Version history and download
 ([Back to contents](#contents))
 
-[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220220-2213.zip)
+[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220221-0920.zip)
 
-Version 090-20220220-2213:
+Version 090-20220221-0920:
 - Added palette mode, including visual PETSCII mode
 - Added favorite slots
 - Changing selected character in the character editor now also changes selected character in main mode
@@ -93,6 +93,7 @@ Description of contents of the disk image:
 - VDCSE.HSC2                (PRG):      Help screen for character edit mode
 - VDCSE.HSC3                (PRG):      Help screen for select, move and line/box modes
 - VDCSE.HSC4                (PRG):      Help screen for write and color write modes
+- VDCSE.PETV                (PRG):      Mapping table for visual PETSCII map
 
 (Fun fact: all screens have actually been created using VDCSE as editor)
 
@@ -322,6 +323,9 @@ Keyboard commands in this mode:
 |**Cursor keys**|Move cursor
 |**+**|Next character (increase screen code)
 |**-**|Previous character (decrease screen code)
+|**0-9**|Select character from favorite slot with corresponding number
+|**SHIFT + 1-9**|Store character to favorite slot with corresponding number
+|**\***|Store character to favorite slot with number 0 (shift 0 does not exist)
 |**SPACE**|Toggle pixel at cursor position (plot/delete pixel)
 |**DEL**|Clear character (delete all pixels of present character)
 |**I**|**I**nverse character
@@ -344,6 +348,14 @@ Press the **cursor keys** to move the cursor around the 8 by 8 grid.
 *Selecting the [screencode](https://sta.c64.org/cbm64scr.html) to plot*
 
 The **+** or **-** key will increase resp. decrease the selected [screencode](https://sta.c64.org/cbm64scr.html) by one. Pressing A will toggle the character set to be used between Standard and Alternate.
+
+*Selecting the [screencode](https://sta.c64.org/cbm64scr.html) to plot from a favotite slot*
+
+In VDCSE 10 positions are available to store your most frequently used characters in. Pressing one of the **0-9** keys selects the favorite with the corresponding number.
+
+*Storing the present [screencode](https://sta.c64.org/cbm64scr.html) to a favorite slot*
+
+Pressing **SHIFT** plus **1-9** stores the presently selected character to the corresponding favorite slot. As SHIFT+0 is the same as 0 on the C128, press **\*** for favorite position 0.
 
 *Toggling bits in the grid*
 
