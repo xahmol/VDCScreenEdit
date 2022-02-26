@@ -14,8 +14,8 @@
 SOURCESMAIN = src/main.c src/vdc_core.c
 SOURCESGEN = src/prggenerator.c
 SOURCESLIB = src/vdc_core_assembly.s src/bootsect.s src/visualpetscii.s
-GENLIB = src/prggenerate.s
-OBJECTS = bootsect.bin vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg vdcse.petv.prg vdcse2prg.prg vdcse2prg.ass.prg
+GENLIB = src/prggenerate.s src/prggenmaco.s
+OBJECTS = bootsect.bin vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg vdcse.petv.prg vdcse2prg.prg vdcse2prg.ass.prg vdcse2prg.mac.prg
 
 ZIP = vdcscreenedit-v090-$(shell date "+%Y%m%d-%H%M").zip
 D64 = vdcse.d64
@@ -71,7 +71,8 @@ $(D64):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D64) -write vdcse.hsc4.prg vdcse.hsc4
 	c1541 -attach $(D64) -write vdcse.petv.prg vdcse.petv
 	c1541 -attach $(D64) -write vdcse2prg.prg vdcse2prg
-	c1541 -attach $(D64) -write vdcse2prg.ass.prg vdcse2prg.ass	
+	c1541 -attach $(D64) -write vdcse2prg.ass.prg vdcse2prg.ass
+	c1541 -attach $(D64) -write vdcse2prg.mac.prg vdcse2prg.mac
 
 $(D71):	$(MAIN) $(OBJECTS)
 	c1541 -format "vdcse,xm" d71 $(D71)
@@ -89,7 +90,8 @@ $(D71):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D71) -write vdcse.hsc4.prg vdcse.hsc4
 	c1541 -attach $(D71) -write vdcse.petv.prg vdcse.petv
 	c1541 -attach $(D71) -write vdcse2prg.prg vdcse2prg
-	c1541 -attach $(D71) -write vdcse2prg.ass.prg vdcse2prg.ass	
+	c1541 -attach $(D71) -write vdcse2prg.ass.prg vdcse2prg.ass
+	c1541 -attach $(D71) -write vdcse2prg.mac.prg vdcse2prg.mac
 
 $(D81):	$(MAIN) $(OBJECTS)
 	c1541 -format "vdcse,xm" d81 $(D81)
@@ -107,7 +109,8 @@ $(D81):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D81) -write vdcse.hsc4.prg vdcse.hsc4
 	c1541 -attach $(D81) -write vdcse.petv.prg vdcse.petv
 	c1541 -attach $(D81) -write vdcse2prg.prg vdcse2prg
-	c1541 -attach $(D81) -write vdcse2prg.ass.prg vdcse2prg.ass	
+	c1541 -attach $(D81) -write vdcse2prg.ass.prg vdcse2prg.ass
+	c1541 -attach $(D81) -write vdcse2prg.mac.prg vdcse2prg.mac
 
 $(ZIP): $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(README)
 	zip $@ $^
@@ -118,7 +121,7 @@ clean:
 # To deploy software to UII+ enter make deploy. Obviously C128 needs to powered on with UII+ and USB drive connected.
 deploy: $(MAIN)
 	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST)
-#	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST2)
+	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST2)
 
 # To run software in VICE
 vice: $(D81)

@@ -1,4 +1,13 @@
-    ; System addresses
+; VDC Screen Editor
+; Screen editor for the C128 80 column mode
+; Written in 2021 by Xander Mol
+
+; https://github.com/xahmol/VDCScreenEdit
+; https://www.idreamtin8bits.com/
+
+; Assemnbly for output of VDCSE2PRG generator
+
+	; System addresses
     VDC_ADDRESS_REGISTER    = $D600     ; VDC Adress register address
     VDC_DATA_REGISTER       = $D601     ; VDC Data register address
     GETIN                   = $ffe4     ; GETIN kernal call for reading keyboard buffer

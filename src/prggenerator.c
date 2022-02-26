@@ -26,6 +26,7 @@ unsigned int screenheight;
 unsigned char screenbackground;
 unsigned char charsetchanged[2];
 unsigned char zp1,zp2,base_low,base_high,poke_value,poke_bank;
+unsigned char bankconfig[4] = {MMU_BANK0,MMU_BANK1,MMU_BANK2,MMU_BANK3};
 
 // Generic routines
 unsigned char dosCommand(const unsigned char lfn, const unsigned char drive, const unsigned char sec_addr, const char *cmd)
@@ -178,6 +179,15 @@ int textInput(unsigned char xpos, unsigned char ypos, char* str, unsigned char s
     return 0;
 }
 
+void SetLoadSaveBank(unsigned char bank)
+{
+	// Function to set bank for I/O operations
+	// Input: banknumber
+
+	VDC_tmp1 = bank;
+	SetLoadSaveBank_core();
+}
+
 unsigned int load_save_data(char* filename, unsigned char deviceid, unsigned int address, unsigned int size, unsigned char bank, unsigned char saveflag)
 {
     // Function to load or save data.
@@ -194,11 +204,7 @@ unsigned int load_save_data(char* filename, unsigned char deviceid, unsigned int
     if(bank)
     {
         // Set bank to 1
-        __asm__ (
-	    	"\tlda\t#1\n"
-	    	"\tldx\t#0\n"
-	    	"\tjsr\t$ff68\n"
-	    	);
+        SetLoadSaveBank(1);
     }
     
 
@@ -213,41 +219,26 @@ unsigned int load_save_data(char* filename, unsigned char deviceid, unsigned int
         error = cbm_k_load(0, address);
     }
 
-    // Set load/save bank back to 0
-    __asm__ (
-		"\tlda\t#0\n"
-		"\tldx\t#0\n"
-		"\tjsr\t$ff68\n"
-		);
+    if(bank)
+    {
+        // Set load/save bank back to 0
+        SetLoadSaveBank(0);
+    }
 
     return error;
 }
 
-void bank_poke(unsigned int address, unsigned char value, unsigned char bank)
+void POKEB(unsigned int address, unsigned char destbank, unsigned char value)
 {
-    base_high = (address>>8) & 0xff;
-    base_low = address & 0xff;
-    poke_value = value;
-    poke_bank = bank;
+	// Function to poke to a memory position in specified bank
+	// Input: address, bank and value to poke
+	// Banknumbers: 0/1 for bank 0 or 1 with IO, 2/3 without I/O
 
-    asm("lda $fb");                     // Load contents of ZP $FB
-    asm("sta %v",zp1);                  // Safeguard in zp1 variable
-    asm("lda $fc");                     // Load contents of ZP $FC
-    asm("sta %v",zp2);                  // Safeguard in zp2 variable
-    asm("lda %v",base_low);             // Load low byte of base address
-    asm("sta $fb");                     // Store at $fb ZP address
-    asm("lda %v",base_high);            // Load high byte of base address
-    asm("sta $fc");                     // Store at $fb ZP address
-    asm("lda #$fb");                    // Load pointer to $FB
-    asm("sta $2B9");                    // Store at STAVEC ($2B9)
-    asm("lda %v",poke_value);           // Set A to value to poke
-    asm("ldy #$00");                    // Set Y index to 0
-    asm("ldx %v", poke_bank);           // Set X for bank number
-    asm("jsr $FF77");                   // Call to INDSTA kernal routine
-    asm("lda %v",zp1);                  // Load zp1 variable
-    asm("sta $fb");                     // Restore $fb ZP address
-    asm("lda %v",zp2);                  // Load zp1 variable
-    asm("sta $fc");                     // Restore $fc ZP address
+	VDC_addrh = (address>>8) & 0xff;					// Obtain high byte of address
+	VDC_addrl = address & 0xff;							// Obtain low byte of address
+	VDC_tmp3 = bankconfig[destbank];					// Set proper MMU config based on bank 0 or 1 with or without I/O
+	VDC_value = value;									// Store value to POKE 
+	POKEB_core();
 }
 
 void main()
@@ -270,6 +261,8 @@ void main()
             VERSION_MAJOR, VERSION_MINOR,
             BUILD_YEAR_CH0, BUILD_YEAR_CH1, BUILD_YEAR_CH2, BUILD_YEAR_CH3, BUILD_MONTH_CH0, BUILD_MONTH_CH1, BUILD_DAY_CH0, BUILD_DAY_CH1,BUILD_HOUR_CH0, BUILD_HOUR_CH1, BUILD_MIN_CH0, BUILD_MIN_CH1);
 
+    POKE(0xd011,PEEK(0xd011)&(~(1<<4)));	// Disable the 5th bit of the SCROLY register to blank VIC screen
+	POKE(0xd011,PEEK(0xd011)&(~(1<<7)));	// Disable the 8th bit of the SCROLY register to avoid accidentally setting raster interrupt to high
     set_c128_speed(SPEED_FAST);			// Set C128 speed to FAST (2 Mhz)
     videomode(VIDEOMODE_80COL);			// Set 80 column mode
     bordercolor(COLOR_BLACK);
@@ -280,6 +273,18 @@ void main()
     cputsxy(0,0,"VDCSE - PRG generator\n\r");
     cprintf("Written by Xander Mol, version %s",version);
 
+    // Set 4Kb shared memory size
+	POKE(0xd506,0x05);						// Set proper bits in $D506 MMU register for 4Kb shared lower memory
+
+    // Load $0C00 area machine code
+	length = load_save_data("vdcse2prg.mac",bootdevice,MACOADDRESS,MAC_SIZE,0,0);
+    if(length<=MACOADDRESS)
+    {
+        cprintf("Load error on loading machine code.");
+        exit(1);
+    }
+
+    // User input for device ID and filenames
     cputsxy(0,3,"Choose drive ID for project to load:");
     do
     {
@@ -353,6 +358,7 @@ void main()
     address=BASEADDRESS;
 
     cprintf("Loading assembly code at %4X.\n\r",address);
+
     // Load loader program
     length = load_save_data("vdcse2prg.ass",bootdevice,address,ASS_SIZE,1,0);
     if(length<=BASEADDRESS)
@@ -364,14 +370,14 @@ void main()
 
     // Poke version string
     cprintf("Poking version string.\n\r");
-    for(x-0;x<22;x++)
+    for(x=0;x<22;x++)
     {
-        bank_poke(BASEADDRESS+VERSIONADDRESS+x,version[x],1);
+        POKEB(BASEADDRESS+VERSIONADDRESS+x,1,version[x]);
     }
 
     // Load screen
     cprintf("Loading screen data at %4X.\n\r",address);
-    bank_poke(BGCOLORADDRESS,screenbackground,1);               // Set background color
+    POKEB(BGCOLORADDRESS,1,screenbackground);                   // Set background color
     sprintf(buffer,"%s.scrn",filename);
     length = load_save_data(buffer,targetdevice,address,SCREEN_SIZE,1,0);
     if(length<=address)
@@ -385,8 +391,8 @@ void main()
     if(charsetchanged[0])
     {
         cprintf("Loading standard charset at %4X.\n\r",address);
-        bank_poke(CHARSTDADDRESS,address&0xff,1);               // Set low byte charset address
-        bank_poke(CHARSTDADDRESS+1,(address>>8)&0xff,1);        // Set high byte charset address
+        POKEB(CHARSTDADDRESS,1,address&0xff);                   // Set low byte charset address
+        POKEB(CHARSTDADDRESS+1,1,(address>>8)&0xff);            // Set high byte charset address
         sprintf(buffer,"%s.chrs",filename);
         length = load_save_data(buffer,targetdevice,address,CHAR_SIZE,1,0);
         if(length<=address)
@@ -401,8 +407,8 @@ void main()
     if(charsetchanged[1])
     {
         cprintf("Loading alternate charset at %4X.\n\r",address);
-        bank_poke(CHARALTADDRESS,address&0xff,1);               // Set low byte charset address
-        bank_poke(CHARALTADDRESS+1,(address>>8)&0xff,1);        // Set high byte charset address
+        POKEB(CHARALTADDRESS,1,address&0xff);                   // Set low byte charset address
+        POKEB(CHARALTADDRESS+1,1,(address>>8)&0xff);            // Set high byte charset address
         sprintf(buffer,"%s.chra",filename);
         length = load_save_data(buffer,targetdevice,address,CHAR_SIZE,1,0);
         if(length<=address)
@@ -422,8 +428,10 @@ void main()
     }
 
     cprintf("\nFinished!\n\r");
-    cprintf("Created ");
+    cprintf("Created %s",filedest);
 
-    set_c128_speed(SPEED_SLOW);         // Switch back to 1Mhz mode for safe exit
-
+    set_c128_speed(SPEED_SLOW);             // Switch back to 1Mhz mode for safe exit
+    POKE(0xd011,PEEK(0xd011)|(1<<4));		// Enable the 5th bit of the SCROLY register to blank VIC screen
+	POKE(0xd011,PEEK(0xd011)&(~(1<<7)));	// Disable the 8th bit of the SCROLY register to avoid accidentally setting raster interrupt to high
+    POKE(0xd506,0x04);					    // Set proper bits in $D506 MMU register for default shared memory
 }
