@@ -1,0 +1,6 @@
+# VS Code
+.vscode/
+
+# Source dependency and object files
+/src/*.d
+/src/*.o
