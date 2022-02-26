@@ -12,8 +12,10 @@
 # - wput command installed: sudo apt-get install wput
 
 SOURCESMAIN = src/main.c src/vdc_core.c
+SOURCESGEN = src/prggenerator.c
 SOURCESLIB = src/vdc_core_assembly.s src/bootsect.s src/visualpetscii.s
-OBJECTS = bootsect.bin vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg vdcse.petv.prg
+GENLIB = src/prggenerate.s
+OBJECTS = bootsect.bin vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg vdcse.petv.prg vdcse2prg.prg vdcse2prg.ass.prg
 
 ZIP = vdcscreenedit-v090-$(shell date "+%Y%m%d-%H%M").zip
 D64 = vdcse.d64
@@ -26,17 +28,19 @@ ULTHOST = ftp://192.168.1.19/usb1/dev/
 ULTHOST2 = ftp://192.168.1.31/usb1/dev/
 
 MAIN = vdcse.prg
+GEN = vdcse2prg.prg
 
 CC65_TARGET = c128
 CC = cl65
 CFLAGS  = -t $(CC65_TARGET) --create-dep $(<:.c=.d) -Os -I include
 LDFLAGSMAIN = -t $(CC65_TARGET) -C vdcse-cc65config.cfg -m $(MAIN).map
+LDFLAGSGEN = -t $(CC65_TARGET) -C vdcsegen-cc65config.cfg -m $(GEN).map
 
 ########################################
 
 .SUFFIXES:
 .PHONY: all clean deploy vice
-all: $(MAIN) $(D64) $(D71) $(D81) $(ZIP)
+all: $(MAIN) $(GEN) $(D64) $(D71) $(D81) $(ZIP)
 
 ifneq ($(MAKECMDGOALS),clean)
 -include $(SOURCESMAIN:.c=.d)
@@ -47,6 +51,9 @@ endif
   
 $(MAIN): $(SOURCESLIB) $(SOURCESMAIN:.c=.o)
 	$(CC) $(LDFLAGSMAIN) -o $@ $^
+
+$(GEN): $(GENLIB) $(SOURCESGEN:.c=.o)
+	$(CC) $(LDFLAGSGEN) -o $@ $^
 
 $(D64):	$(MAIN) $(OBJECTS)
 	c1541 -format "vdcse,xm" d64 $(D64)
@@ -62,7 +69,9 @@ $(D64):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D64) -write vdcse.hsc2.prg vdcse.hsc2
 	c1541 -attach $(D64) -write vdcse.hsc3.prg vdcse.hsc3
 	c1541 -attach $(D64) -write vdcse.hsc4.prg vdcse.hsc4
-	c1541 -attach $(D64) -write vdcse.petv.prg vdcse.petv	
+	c1541 -attach $(D64) -write vdcse.petv.prg vdcse.petv
+	c1541 -attach $(D64) -write vdcse2prg.prg vdcse2prg
+	c1541 -attach $(D64) -write vdcse2prg.ass.prg vdcse2prg.ass	
 
 $(D71):	$(MAIN) $(OBJECTS)
 	c1541 -format "vdcse,xm" d71 $(D71)
@@ -79,6 +88,8 @@ $(D71):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D71) -write vdcse.hsc3.prg vdcse.hsc3
 	c1541 -attach $(D71) -write vdcse.hsc4.prg vdcse.hsc4
 	c1541 -attach $(D71) -write vdcse.petv.prg vdcse.petv
+	c1541 -attach $(D71) -write vdcse2prg.prg vdcse2prg
+	c1541 -attach $(D71) -write vdcse2prg.ass.prg vdcse2prg.ass	
 
 $(D81):	$(MAIN) $(OBJECTS)
 	c1541 -format "vdcse,xm" d81 $(D81)
@@ -95,6 +106,8 @@ $(D81):	$(MAIN) $(OBJECTS)
 	c1541 -attach $(D81) -write vdcse.hsc3.prg vdcse.hsc3
 	c1541 -attach $(D81) -write vdcse.hsc4.prg vdcse.hsc4
 	c1541 -attach $(D81) -write vdcse.petv.prg vdcse.petv
+	c1541 -attach $(D81) -write vdcse2prg.prg vdcse2prg
+	c1541 -attach $(D81) -write vdcse2prg.ass.prg vdcse2prg.ass	
 
 $(ZIP): $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(README)
 	zip $@ $^

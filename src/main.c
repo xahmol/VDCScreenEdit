@@ -1914,7 +1914,7 @@ void palette_draw()
     textcolor(vdctoconiocol[mc_menupopup & 0x0f]);
 
     // Set coordinate of present char if no visual map
-    if(visualmap==0 || plotaltchar)
+    if(visualmap==0)
     {
         rowsel = palettechar/32 + plotaltchar*9 + 2;
         colsel = palettechar%32;
@@ -1934,17 +1934,18 @@ void palette_draw()
             if(visualmap)
             {
                 VDC_Plot( 3+y,46+x,PEEK(petsciiaddress),attribute);
+                VDC_Plot(12+y,46+x,PEEK(petsciiaddress),attribute+VDC_A_ALTCHAR);
                 if(PEEK(petsciiaddress++)==palettechar)
                 {
-                    rowsel = y+2;
+                    rowsel = y+2+(9*plotaltchar);
                     colsel = x;
                 }
             }
             else
             {
                 VDC_Plot( 3+y,46+x,counter,attribute);
+                VDC_Plot(12+y,46+x,counter,attribute+VDC_A_ALTCHAR);
             }
-            VDC_Plot(12+y,46+x,counter,attribute+VDC_A_ALTCHAR);
             counter++;
         }
     }
@@ -1974,7 +1975,15 @@ void palette_returnscreencode()
     }
     if(rowsel>10)
     {
-        palettechar = colsel + (rowsel-11)*32;
+        if(visualmap)
+        {
+            palettechar = PEEK(PETSCIIMAP+colsel + (rowsel-11)*32);
+        }
+        else
+        {
+            palettechar = colsel + (rowsel-11)*32;
+        }
+
         plotaltchar = 1;
     }
 }
