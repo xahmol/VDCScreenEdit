@@ -27,6 +27,8 @@ Commodore 128 80 column screen editor
 
 [Color write mode](#color-write-mode)
 
+[VDCSE2PRG utility](#vdcse2prg-utility)
+
 [Color value reference](#color-value-reference)
 
 [Attribute code reference](#attribute-code-reference)
@@ -41,7 +43,10 @@ Commodore 128 80 column screen editor
 ## Version history and download
 ([Back to contents](#contents))
 
-[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220221-0920.zip)
+[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220227-0005.zip)
+
+Version 090-20220227-0005:
+- Added VDCSE2PRG utility
 
 Version 090-20220221-0920:
 - Added palette mode, including visual PETSCII mode
@@ -94,6 +99,9 @@ Description of contents of the disk image:
 - VDCSE.HSC3                (PRG):      Help screen for select, move and line/box modes
 - VDCSE.HSC4                (PRG):      Help screen for write and color write modes
 - VDCSE.PETV                (PRG):      Mapping table for visual PETSCII map
+- VDCSE2PRG                 (PRG):      Executable of the VDCSE2PRG utility
+- VDCSE2PRG.ASS             (PRG):      BASIC header and assembly part for generating executables
+- VDCSE2PRG.MAC             (PRG):      Machine code helper routines of VDCSE2PRG
 
 (Fun fact: all screens have actually been created using VDCSE as editor)
 
@@ -568,6 +576,22 @@ Leave Color write mode by pressing **ESC** or **STOP**. **F8** will show a help 
 |**F4**|Redo
 |**ESC** / **STOP**|Go back to main mode
 |**F8**|Help screen
+
+## VDCSE2PRG utility
+([Back to contents](#contents))
+
+VDCSE2PRG is a separate utility to create an executable program file for the C128 of a VDCSE project. Only 80x25 screens are supported at the moment, but redefined character sets are supported.
+
+This is a seperate utility which can not be started from the VDCSE main program but has to be started seperately by loading the VDCSE2PRG file from disk with for example RUN"VDCSE2PRG",U(device number).
+
+Running this program gives this interface:
+
+![VDCSE2PRG UI](https://github.com/xahmol/VDCScreenEdit/blob/main/screenshots/VDCSE2PRG%20UI.png?raw=true)
+
+Follow the on screen instructions for selecting the input file and the output file name. Input file should be a VDCSE project file in 80x25 characters, with the associated screen and characterset files on the same disk/location.
+Enter the input file filename without the .proj at the end.
+
+The generated program can be executed by using a RUN"(target filename)",U(target device ID).
 
 ## Color value reference:
 ([Back to contents](#contents))
