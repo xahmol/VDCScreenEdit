@@ -1,7 +1,7 @@
 Modules list:
 -------------
 prggenerate.o:
-    PRGGEN            Offs=000000  Size=000183  Align=00001  Fill=0000
+    PRGGEN            Offs=000000  Size=0001CE  Align=00001  Fill=0000
 prggenmaco.o:
     GENMACO           Offs=000000  Size=000053  Align=00001  Fill=0000
 prggenerator.o:
@@ -218,7 +218,7 @@ Name                   Start     End    Size  Align
 ZEROPAGE              000002  00001B  00001A  00001
 GENMACO               000BFE  000C50  000053  00001
 LOADADDR              001BFF  001C00  000002  00001
-PRGGEN                001BFF  001D81  000183  00001
+PRGGEN                001BFF  001DCC  0001CE  00001
 EXEHDR                001C01  001C0C  00000C  00001
 STARTUP               001C0D  001C5D  000051  00001
 ONCE                  001C5E  001C8C  00002F  00001

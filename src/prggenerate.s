@@ -8,9 +8,16 @@
 ; Assemnbly for output of VDCSE2PRG generator
 
 	; System addresses
+	SCROLY					= $D011		; Vertical smooth scrolling and control register
+	CLKRATE					= $D030		; Processor clock rate: 0 = 1 MHZ, 1 = 2Mhz
     VDC_ADDRESS_REGISTER    = $D600     ; VDC Adress register address
     VDC_DATA_REGISTER       = $D601     ; VDC Data register address
-    GETIN                   = $ffe4     ; GETIN kernal call for reading keyboard buffer
+	SWAPPER					= $FF5F		; SWAPPER kernal call: switch between 40 and 80 columns
+	DLCHR					= $FF62		; DLCHR kernal call for resetting VDC charsets
+	CINT					= $FF81		; CINT kernal call for initialize screen editor
+	BSOUT					= $FFD2		; BSOUT kernal call for printing a character
+    GETIN                   = $FFE4     ; GETIN kernal call for reading keyboard buffer
+	MODE					= $D7		; Active screen flag, check bit 7: if set->80 column
 
     ; VDC registers
     VDC_UPDATEADRESSHIGH    = $12       ; VDC Register Update Address High Byte
@@ -69,7 +76,20 @@ _VDC_destl:
 _VDC_desth:
 	.res	1							; $1C85: VDC destination address high bye
 
-    ; Set background color
+	; Check if active screen is 40 or 80 column
+	lda MODE							; Check display mode
+	bmi vdcmode							; Branch if 80 column
+
+    ; Show message in 40 column mode
+	lda #<switchvdcmessage					; Low byte of text address
+	sta ZP1								; Store low byte in zero page
+	lda #>switchvdcmessage					; Low byte of text address
+	sta ZP2								; Store low byte in zero page
+	jsr textout							; Print message
+	jsr SWAPPER							; Switch to 80 column mode
+
+vdcmode:
+	; Set VDC background color
     ldx #VDC_FGBGCOLOR
     lda bgcolor
     jsr VDC_Write
@@ -125,7 +145,7 @@ _VDC_CopyMemToVDC_core:
     sta length                          ; Store as length
 
 	; Set address pointer in zero-page
-	lda #$84							; Obtain low byte in A
+	lda #$CF							; Obtain low byte in A
 	sta ZP1								; Store low byte in pointer
 	lda #$1D							; Obtain high byte in A
 	sta ZP2								; Store high byte in pointer
@@ -166,6 +186,13 @@ nextm2v1:								; Next label
 waitkey:
     jsr GETIN
     beq waitkey
+
+	; Reset charsets
+	jsr DLCHR							; Call kernal routine for restoring VDC charsets
+
+	; Clear screens
+	jsr CINT							; Call CINT kernal routine for clearing screens
+	jsr SWAPPER							; Switch to 80 column again
 
     ; return to BASIC
 	rts
@@ -265,3 +292,23 @@ notyetreadywrite:						; Start of wait loop to wait for VDC status ready
 	bpl notyetreadywrite                ; Continue loop if status is not ready
 	sta VDC_DATA_REGISTER               ; Store A to VDC data
 	rts
+
+; ------------------------------------------------------------------------------------------
+textout:
+; Function to print a text to screen
+; Input:	ZP1 = low byte of text address
+; 			ZP2 = high byte of text address
+; ------------------------------------------------------------------------------------------
+
+	ldy #$00							; Set index to zero
+textout_loop:
+	lda (ZP1),y							; Get character
+	beq textout_end						; Text end?
+	jsr BSOUT							; Print char
+	iny									; Next char
+	jmp textout_loop					; Loop
+textout_end:
+	rts									; Return
+
+switchvdcmessage:
+.byte "switch to 80 column mode to view.",0

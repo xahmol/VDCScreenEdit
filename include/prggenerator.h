@@ -1,7 +1,7 @@
 #ifndef __PRGGENERATOR_H_
 #define __PRGGENERATOR_H_
 
-#define ASS_SIZE        0x0183
+#define ASS_SIZE        0x01CE
 #define MAC_SIZE        0x0053
 #define SCREEN_SIZE     0x1000
 #define CHAR_SIZE       0x0800
