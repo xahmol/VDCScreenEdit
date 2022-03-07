@@ -43,7 +43,12 @@ Commodore 128 80 column screen editor
 ## Version history and download
 ([Back to contents](#contents))
 
-[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220227-0036.zip)
+[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220307-1210.zip)
+
+Version v090-20220307-1210:
+- Minor tweaks to VDCSE2PRG:
+    - Show message if started in 40 column mode
+    - Leave program with standard charset and clear screen (in 80 column mode)
 
 Version 090-20220227-0036:
 - Added VDCSE2PRG utility
