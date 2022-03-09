@@ -2402,7 +2402,6 @@ unsigned char checkiffileexists(char* filetocheck, unsigned char id)
             proceed = 0;
         }
     }
-    cbm_close(2);
 
     return proceed;
 }
@@ -2494,14 +2493,15 @@ void saveproject()
 
     unsigned char error;
     unsigned char projbuffer[22];
+    unsigned char tempfilename[21];
 
     chooseidandfilename("Save project",10);
 
-    sprintf(buffer,"%s.proj",filename);
+    sprintf(tempfilename,"%s.proj",filename);
 
     windowrestore(0);
 
-    if(checkiffileexists(buffer,targetdevice)==1)
+    if(checkiffileexists(tempfilename,targetdevice)==1)
     {
         // Scratch old files
         sprintf(buffer,"s:%s.proj",filename);

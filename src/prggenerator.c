@@ -329,7 +329,6 @@ void main()
             exit(1);
         }
     }
-    cbm_close(2);
 
     cprintf("\n\n\rLoading project meta data.\n\r");
 

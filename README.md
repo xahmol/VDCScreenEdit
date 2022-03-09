@@ -43,7 +43,10 @@ Commodore 128 80 column screen editor
 ## Version history and download
 ([Back to contents](#contents))
 
-[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220307-1210.zip)
+[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220309-1618.zip)
+
+Version v090-20220309-1618:
+- Bugfix in 'does file exist' check
 
 Version v090-20220307-1210:
 - Minor tweaks to VDCSE2PRG:
