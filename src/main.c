@@ -2401,6 +2401,10 @@ unsigned char checkiffileexists(char* filetocheck, unsigned char id)
         {
             proceed = 0;
         }
+        else
+        {
+            proceed = 2;
+        }
     }
 
     return proceed;
@@ -2456,17 +2460,22 @@ void savescreenmap()
 {
     // Function to save screenmap
 
-    unsigned char error;
+    unsigned char error, overwrite;
   
     chooseidandfilename("Save screen",15);
 
     windowrestore(0);
 
-    if(checkiffileexists(filename,targetdevice)==1)
+    overwrite = checkiffileexists(filename,targetdevice);
+
+    if(overwrite)
     {
         // Scratch old file
-        sprintf(buffer,"s:%s",filename);
-        cmd(targetdevice,buffer);
+        if(overwrite==2)
+        {
+            sprintf(buffer,"s:%s",filename);
+            cmd(targetdevice,buffer);
+        }
 
         // Set device ID
 	    cbm_k_setlfs(0, targetdevice, 0);
@@ -2491,7 +2500,7 @@ void saveproject()
 {
     // Function to save project (screen, charsets and metadata)
 
-    unsigned char error;
+    unsigned char error,overwrite;
     unsigned char projbuffer[22];
     unsigned char tempfilename[21];
 
@@ -2501,17 +2510,22 @@ void saveproject()
 
     windowrestore(0);
 
-    if(checkiffileexists(tempfilename,targetdevice)==1)
+    overwrite = checkiffileexists(filename,targetdevice);
+
+    if(overwrite)
     {
         // Scratch old files
-        sprintf(buffer,"s:%s.proj",filename);
-        cmd(targetdevice,buffer);
-        sprintf(buffer,"s:%s.scrn",filename);
-        cmd(targetdevice,buffer);
-        sprintf(buffer,"s:%s.chrs",filename);
-        cmd(targetdevice,buffer);
-        sprintf(buffer,"s:%s.chra",filename);
-        cmd(targetdevice,buffer);
+        if(overwrite==2)
+        {
+            sprintf(buffer,"s:%s.proj",filename);
+            cmd(targetdevice,buffer);
+            sprintf(buffer,"s:%s.scrn",filename);
+            cmd(targetdevice,buffer);
+            sprintf(buffer,"s:%s.chrs",filename);
+            cmd(targetdevice,buffer);
+            sprintf(buffer,"s:%s.chra",filename);
+            cmd(targetdevice,buffer);
+        }
 
         // Store project data to buffer variable
 	    SetLoadSaveBank(0);
