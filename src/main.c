@@ -2618,6 +2618,7 @@ void loadproject()
     sprintf(pulldownmenutitles[0][1],"Height:  %5i ",screenheight);
     screentotal             = projbuffer[ 8]*256+projbuffer[ 9];
     screenbackground        = projbuffer[10];
+    VDC_BackColor(screenbackground);
     sprintf(buffer,"Color: %2i",screenbackground);
     mc_mb_normal            = projbuffer[11];
     mc_mb_select            = projbuffer[12];
