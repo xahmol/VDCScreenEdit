@@ -11,6 +11,8 @@ Commodore 128 80 column screen editor
 
 [Main mode](#main-mode)
 
+[Statusbar](#statusbar)
+
 [Main menu](#main-menu)
 
 [Character editor](#character-editor)
@@ -43,7 +45,17 @@ Commodore 128 80 column screen editor
 ## Version history and download
 ([Back to contents](#contents))
 
-[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v090-20220309-1618.zip)
+[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v099-20220323-1128.zip)
+
+Version v099-20220323-1128:
+- Major overhaul of memory management by moving many functions to memory overlays. Gives room for new functionality (as before I did not have room left)
+- Added statusbar. Is enabled by default, can be toggled to show or not by pressing F6 in every mode.
+- Statusbar autohides if you move the cursor to the lowest visible line, shows again if enabled if moving up again
+- Statusbar shows present mode, co-ordinates, plot screencode (visual and as hexcode), plot color (visual and as number) and shows REV UND BLI ALT if these attributes (reverse, underline, blink and alternate charset) are enabled, shows nothing if disabled. Also hints at F8 for help.
+- Added Try mode: pressing T shows the present selected character as plotted without cursor blinking. Pressing space in this mode plots the character for real, any other character cancels and returns without plotting.
+- Tweaked pulldown menus so that the cyan also is visible different from yellow on a monochrome monitor. Added a minus to show the actual selection to also be able to distinguish selected option without needing the colors.
+- Added cancel option in all load and save dialogues by pressing ESC or STOP on devide ID or filename input
+- Small change: status screen shows load progress
 
 Version v090-20220309-1618:
 - Bugfix in 'does file exist' check
@@ -150,11 +162,13 @@ Press these keys in main mode for editing:
 |**M**|Go to '**M**ove mode'
 |**S**|Go to '**S**elect mode'
 |**P**|Go to '**P**alette mode'
+|**T**|Try mode
 |**Z**|Undo
 |**Y**|Redo
 |**I**|Toggle '**I**nverse': toggle increase/decrease screencode by 128
 |**HOME**|Move cursor to upper left corner of canvas
 |**F1**|Go to main menu
+|**F6**|Toggle statusbar visibility
 |**F8**|Help screen
 
 *Moving cursor*
@@ -185,6 +199,7 @@ The cursor will update to show the updated attribute code.
 *Plotting and deleting a character*
 
 Press **SPACE** to plot the presently selected character in the presently selected attributes at the present cursor position. **DEL** will delete the character and attribute value at the present position.
+Press **T** to preview how the selected character would look like if plotted without cursor blinking. Then press **SPACE** to confirm plotting the character, or any other key to cancel.
 
 *Grabbing a character*
 
@@ -201,10 +216,31 @@ Reference is made to the specific sections in this readme for these modes (click
 
 NB: No visible clue is given which mode is activated (due to constraints by not being able to take unaltered charsets for granted and the cursor already used for showing [screencode](https://sta.c64.org/cbm64scr.html) and attribute selected).
 
+*Toggle statusbar visibility*
+Press **F6** to toggle between the statusbar being visible (default) or not.
+
 *Help screen*
 Press **F8** to show a help screen with all keyboard commands for this mode.
 
-## Main menu:
+## Statusbar
+If enabled, the statusbar is plotted as this at the lowest line of the screen:
+
+![Status bar](https://github.com/xahmol/VDCScreenEdit/raw/main/screenshots/VDCSE%20statusbar.png)
+
+From left to right, this status bar shows:
+
+- Mode: mode the program is in (such as Main, Select, Line/Box, Palette or Character Editor).
+- X,Y: X and Y co-ordinates of the cursor (co-ordinates of the large full screen, and not only the visible screen, if a larger screen than 80 by 25 characters is selected)
+- Char: the present selected character to plot, first as actual visual character, then as screencode number in hexadecimal
+- Color: the present selected color to plot, first as actual visual color, then as color number
+- Atrributes: this shows the enabled attributes, REV for Reverse, UND for Underline, BLI for Blink and ALT for Alternate character set. If the abbreviation is shown, the corresponding attribute is enabled, else disabled.
+- Reference that F8 gives you the help screen
+
+The status bar auto hides if the cursor is moved to the lowest visible line on the screen, and pops up again (if enabled in the first place) when the cursor moves up.
+
+Pressing **F6** toggles statusbar visibility in every mode.
+
+## Main menu
 ([Back to contents](#contents))
 
 From [main mode](#main-mode), press **F1** to go to the main menu. The following menu will pop up:
@@ -262,6 +298,8 @@ Similar to clear, but this will fill the canvas with the present selected [scree
 **_File menu_**
 
 ![File menu](https://github.com/xahmol/VDCScreenEdit/blob/main/screenshots/VDCSE%20File%20menu.png?raw=true)
+
+In general: pressing **ESC** or **STOP** on any devide ID or filename input dialogue cancels the file operation.
 
 *Save screen*
 
@@ -355,6 +393,7 @@ Keyboard commands in this mode:
 |**L** / **R** / **U** / **D**|Scroll **L**eft, **R**ight, **U**p or **D**own
 |**H**|Input **H**ex value for line at cursor position
 |**ESC** / **STOP**|Leave character mode and go back to main mode
+|**F6**|Toggle statusbar visibility
 |**F8**|Help screen
 
 *Moving cursor*
@@ -419,6 +458,7 @@ Keyboard commands in this mode:
 |**0-9**|Store character in corresponding favorite slot
 |**V**|Toggle between normal mode and visual PETSCII mode
 |**ESC** / **STOP**|Leave character mode and go back to main mode
+|**F6**|Toggle statusbar visibility
 |**F8**|Help screen
 
 *Moving cursor*
@@ -450,7 +490,13 @@ Pressing **ESC** or **STOP** leaves the palette mode and returns to main mode. *
 ## Select mode:
 ([Back to contents](#contents))
 
-Pressing **S** in the main mode starts the Select mode. In this mode a selection can be made on which different operations can be performed as described below.
+Pressing **S** in the main mode starts the Select mode.
+
+If enabled, the statusbar shows this on entering this mode:
+
+![Status bar in Select mode](https://github.com/xahmol/VDCScreenEdit/raw/main/screenshots/VDCSE%20statusbar%20Select.png)
+
+In this mode a selection can be made on which different operations can be performed as described below.
 
 |Key|Description
 |---|---|
@@ -462,6 +508,7 @@ Pressing **S** in the main mode starts the Select mode. In this mode a selection
 |**RETURN**|Accept selection / accept new position
 |**ESC** / **STOP**|Cancel and go back to main mode
 |**Cursor keys**|Expand/shrink in the selected direction / Move cursor to select destination position
+|**F6**|Toggle statusbar visibility
 |**F8**|Help screen
 
 *Making the selection*
@@ -477,10 +524,17 @@ Accept the selection by pressing **RETURN**, cancel the selection by pressing **
 *Choose action to perform*
 
 After accepting the selection, press **X**, **C**, **D**, **A** or **P** to choose an action, or press **ESC** or **STOP** to cancel.
+Statusbar (if enabled) shows this as prompter:
+
+![Statusbar Select Options](https://github.com/xahmol/VDCScreenEdit/raw/main/screenshots/VDCSE%20statusbar%20Select%20choose%20option.png)
 
 *Cut and copy*
 
 After pressing **X** for cut or **C** for copy, move cursor to the upper left corner where the selection should be copied to. **C** will only make a copy, **X** will delete the selection at the old location.
+
+Statusbar (if enabled) displays Cut or Copy correspondingly, like:
+
+![Statusbar Cut or Copy](https://github.com/xahmol/VDCScreenEdit/raw/main/screenshots/VDCSE%20statusbar%20Select%20Copy.png)
 
 *Delete*
 
@@ -512,6 +566,7 @@ Accept with **RETURN**, cancel with **ESC** or **STOP**. Both will leave this mo
 |**Cursor keys**|Move in the selected direction
 |**RETURN**|Accept moved position
 |**ESC** / **STOP**|Cancel and go back to main mode
+|**F6**|Toggle statusbar visibility
 |**F8**|Help screen
 
 ## Line and box mode:
@@ -530,6 +585,7 @@ Accept with **RETURN**, cancel with **ESC** or **STOP**. Both will leave this mo
 |**Cursor keys**|Expand/shrink in the selected direction
 |**RETURN**|Accept line or box
 |**ESC** / **STOP**|Cancel and go back to main mode
+|**F6**|Toggle statusbar visibility
 |**F8**|Help screen
 
 ## Write mode:
@@ -558,6 +614,7 @@ Leave Write mode by pressing **ESC** or **STOP**. **F8** will show a help screen
 |**C=** / **CONTROL** + **1-8**|Select color
 |**CONTROL** + **9 / 0**|RVS On / RVS Off (toggle [screencode](https://sta.c64.org/cbm64scr.html) + 128)
 |**ESC** / **STOP**|Go back to main mode
+|**F6**|Toggle statusbar visibility
 |**F8**|Help screen
 |**Other keys**|Plot corresponding character (if printable)
 
@@ -583,6 +640,7 @@ Leave Color write mode by pressing **ESC** or **STOP**. **F8** will show a help 
 |**F2**|Undo
 |**F4**|Redo
 |**ESC** / **STOP**|Go back to main mode
+|**F6**|Toggle statusbar visibility
 |**F8**|Help screen
 
 ## VDCSE2PRG utility
