@@ -11,13 +11,13 @@
 # - ZIP packages installed: sudo apt-get install zip
 # - wput command installed: sudo apt-get install wput
 
-SOURCESMAIN = src/main.c src/vdc_core.c
+SOURCESMAIN = src/main.c src/vdc_core.c src/overlay1.c src/overlay2.c src/overlay3.c src/overlay4.c
 SOURCESGEN = src/prggenerator.c
 SOURCESLIB = src/vdc_core_assembly.s src/bootsect.s src/visualpetscii.s
 GENLIB = src/prggenerate.s src/prggenmaco.s
-OBJECTS = bootsect.bin vdcse.maco.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg vdcse.petv.prg vdcse2prg.prg vdcse2prg.ass.prg vdcse2prg.mac.prg
+OBJECTS = bootsect.bin vdcse.maco.prg vdcse.ovl1.prg vdcse.ovl2.prg vdcse.ovl3.prg vdcse.ovl4.prg vdcse.falt.prg vdcse.fstd.prg vdcse.tscr.prg vdcse.hsc1.prg vdcse.hsc2.prg vdcse.hsc3.prg vdcse.hsc4.prg vdcse.petv.prg vdcse2prg.prg vdcse2prg.ass.prg vdcse2prg.mac.prg
 
-ZIP = vdcscreenedit-v090-$(shell date "+%Y%m%d-%H%M").zip
+ZIP = vdcscreenedit-v099-$(shell date "+%Y%m%d-%H%M").zip
 D64 = vdcse.d64
 D71 = vdcse.d71
 D81 = vdcse.d81
@@ -62,6 +62,10 @@ $(D64):	$(MAIN) $(OBJECTS)
 	c1541 $(D64) -bam 1 1
 	c1541 -attach $(D64) -write vdcse.prg vdcse
 	c1541 -attach $(D64) -write vdcse.maco.prg vdcse.maco
+	c1541 -attach $(D64) -write vdcse.ovl1.prg vdcse.ovl1
+	c1541 -attach $(D64) -write vdcse.ovl2.prg vdcse.ovl2
+	c1541 -attach $(D64) -write vdcse.ovl3.prg vdcse.ovl3
+	c1541 -attach $(D64) -write vdcse.ovl4.prg vdcse.ovl4
 	c1541 -attach $(D64) -write vdcse.falt.prg vdcse.falt
 	c1541 -attach $(D64) -write vdcse.fstd.prg vdcse.fstd
 	c1541 -attach $(D64) -write vdcse.tscr.prg vdcse.tscr
@@ -81,6 +85,10 @@ $(D71):	$(MAIN) $(OBJECTS)
 	c1541 $(D71) -bam 1 1
 	c1541 -attach $(D71) -write vdcse.prg vdcse
 	c1541 -attach $(D71) -write vdcse.maco.prg vdcse.maco
+	c1541 -attach $(D71) -write vdcse.ovl1.prg vdcse.ovl1
+	c1541 -attach $(D71) -write vdcse.ovl2.prg vdcse.ovl2
+	c1541 -attach $(D71) -write vdcse.ovl3.prg vdcse.ovl3
+	c1541 -attach $(D71) -write vdcse.ovl4.prg vdcse.ovl4
 	c1541 -attach $(D71) -write vdcse.falt.prg vdcse.falt
 	c1541 -attach $(D71) -write vdcse.fstd.prg vdcse.fstd
 	c1541 -attach $(D71) -write vdcse.tscr.prg vdcse.tscr
@@ -100,6 +108,10 @@ $(D81):	$(MAIN) $(OBJECTS)
 	c1541 $(D81) -bam 1 1
 	c1541 -attach $(D81) -write vdcse.prg vdcse
 	c1541 -attach $(D81) -write vdcse.maco.prg vdcse.maco
+	c1541 -attach $(D81) -write vdcse.ovl1.prg vdcse.ovl1
+	c1541 -attach $(D81) -write vdcse.ovl2.prg vdcse.ovl2
+	c1541 -attach $(D81) -write vdcse.ovl3.prg vdcse.ovl3
+	c1541 -attach $(D81) -write vdcse.ovl4.prg vdcse.ovl4
 	c1541 -attach $(D81) -write vdcse.falt.prg vdcse.falt
 	c1541 -attach $(D81) -write vdcse.fstd.prg vdcse.fstd
 	c1541 -attach $(D81) -write vdcse.tscr.prg vdcse.tscr
@@ -121,8 +133,8 @@ clean:
 	
 # To deploy software to UII+ enter make deploy. Obviously C128 needs to powered on with UII+ and USB drive connected.
 deploy: $(MAIN)
-#	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST)
-	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST2)
+	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST)
+#	wput -u $(MAIN) $(OBJECTS) $(D64) $(D71) $(D81) $(ULTHOST2)
 
 # To run software in VICE
 vice: $(D81)

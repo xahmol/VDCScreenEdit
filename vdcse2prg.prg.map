@@ -433,19 +433,19 @@ ST (status.o):
 SWAPPER (kernal.o):
     videomode.o               c128/videomode.s:9
 _POKEB_core (prggenmaco.o):
-    prggenerator.o            src/prggenerator.s:48
+    prggenerator.o            src/prggenerator.s:57
 _SetLoadSaveBank_core (prggenmaco.o):
-    prggenerator.o            src/prggenerator.s:47
+    prggenerator.o            src/prggenerator.s:56
 _VDC_addrh (prggenmaco.o):
-    prggenerator.o            src/prggenerator.s:42
+    prggenerator.o            src/prggenerator.s:51
 _VDC_addrl (prggenmaco.o):
-    prggenerator.o            src/prggenerator.s:43
+    prggenerator.o            src/prggenerator.s:52
 _VDC_tmp1 (prggenmaco.o):
-    prggenerator.o            src/prggenerator.s:45
+    prggenerator.o            src/prggenerator.s:54
 _VDC_tmp3 (prggenmaco.o):
-    prggenerator.o            src/prggenerator.s:46
+    prggenerator.o            src/prggenerator.s:55
 _VDC_value (prggenmaco.o):
-    prggenerator.o            src/prggenerator.s:44
+    prggenerator.o            src/prggenerator.s:53
 __BSS_RUN__ ([linker generated]):
     zerobss.o                 common/zerobss.s:8
 __BSS_SIZE__ ([linker generated]):

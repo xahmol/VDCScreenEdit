@@ -8,6 +8,9 @@
 /* Address mapping for visual PETSCII map */
 #define PETSCIIMAP          0x0C00      // PETSCII map in RS232 buffer
 
+/* Bank 0 save data adress mapping */
+#define OVERLAYBANK0        0xC000      // Start address overlay storage bank 0
+
 /* Bank 1 memory addresses mapping */
 #define WINDOWBASEADDRESS   0x2000      // Base address for windows system data, 8k reserved
 #define CHARSETSYSTEM       0x4000      // Base address for system charset
@@ -15,9 +18,103 @@
 #define CHARSETALTERNATE    0x5000      // Base address for alternate charset
 #define SCREENMAPBASE       0x5800      // Base address for screen map
 #define MEMORYLIMIT         0xCFFF      // Upper memory limit address for address map
+#define OVERLAYBANK1        0xD000      // Start address overlay storage bank 1
+
+/* Global variables */
+
+// Overlay data struct
+#define OVERLAYNUMBER       4           // Number of overlays
+#define OVERLAYSIZE         0x1400      // Overlay size (align with config)
+#define OVERLAYLOAD         0xAC00      // Overlay load address (align with config=0xC000-OVERLAYSIZE)
+struct OverlayStruct
+{
+    unsigned char bank;
+    unsigned int address;
+};
+extern struct OverlayStruct overlaydata[4];
+extern unsigned char overlay_active;
+
+//Window data
+struct WindowStruct
+{
+    unsigned int address;
+    unsigned char ypos;
+    unsigned char height;
+};
+extern struct WindowStruct Window[9];
+extern unsigned int windowaddress;
+extern unsigned char windownumber;
+
+//Menu data
+extern unsigned char menubaroptions;
+extern unsigned char pulldownmenunumber;
+extern char menubartitles[4][12];
+extern unsigned char menubarcoords[4];
+extern unsigned char pulldownmenuoptions[5];
+extern char pulldownmenutitles[5][5][16];
+
+// Undo data
+extern unsigned char vdcmemory;
+extern unsigned char undoenabled;
+extern unsigned int undoaddress;
+extern unsigned char undonumber;
+extern unsigned char undo_undopossible;
+extern unsigned char undo_redopossible;
+struct UndoStruct
+{
+    unsigned int address;
+    unsigned char ystart;
+    unsigned char xstart;
+    unsigned char height;
+    unsigned char width;
+    unsigned char redopresent;
+};
+extern struct UndoStruct Undo[41];
+
+// Menucolors
+extern unsigned char mc_mb_normal;
+extern unsigned char mc_mb_select;
+extern unsigned char mc_pd_normal;
+extern unsigned char mc_pd_select;
+extern unsigned char mc_menupopup;
+
+// Global variables
+extern unsigned char bootdevice;
+extern char DOSstatus[40];
+extern unsigned char charsetchanged[2];
+extern unsigned char appexit;
+extern unsigned char targetdevice;
+extern char filename[21];
+extern char programmode[11];
+extern unsigned char showbar;
+
+extern unsigned char screen_col;
+extern unsigned char screen_row;
+extern unsigned int xoffset;
+extern unsigned int yoffset;
+extern unsigned int screenwidth;
+extern unsigned int screenheight;
+extern unsigned int screentotal;
+extern unsigned char screenbackground;
+extern unsigned char plotscreencode;
+extern unsigned char plotcolor;
+extern unsigned char plotreverse;
+extern unsigned char plotunderline;
+extern unsigned char plotblink;
+extern unsigned char plotaltchar;
+extern unsigned int select_startx, select_starty, select_endx, select_endy, select_width, select_height, select_accept;
+extern unsigned char rowsel;
+extern unsigned char colsel;
+extern unsigned char palettechar;
+extern unsigned char visualmap;
+extern unsigned char favourites[10][2];
+
+extern char buffer[81];
+extern char version[22];
 
 /* Char defines */
 #define CH_SPACE            32          // Screencode for space
+#define CH_MINUS            45          // Screencode for minus
 #define CH_BLACK            144         // Petscii control code for black           CTRL-1
 #define CH_WHITE            5           // Petscii control code for white           CTRL-2
 #define CH_DRED             28          // Petscii control code for dark red        CTRL-3
@@ -44,7 +141,7 @@ extern unsigned char bootdevice;
 /* Defines for versioning */
 /* Version number */
 #define VERSION_MAJOR 0
-#define VERSION_MINOR 90
+#define VERSION_MINOR 99
 /* Build year */
 #define BUILD_YEAR_CH0 (__DATE__[ 7])
 #define BUILD_YEAR_CH1 (__DATE__[ 8])
