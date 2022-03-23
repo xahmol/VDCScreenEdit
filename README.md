@@ -55,7 +55,7 @@ Version v099-20220323-1629:
 - Added Try mode: pressing T shows the present selected character as plotted without cursor blinking. Pressing space in this mode plots the character for real, any other character cancels and returns without plotting.
 - Tweaked pulldown menus so that the cyan also is visible different from yellow on a monochrome monitor. Added a minus to show the actual selection to also be able to distinguish selected option without needing the colors.
 - Added cancel option in all load and save dialogues by pressing ESC or STOP on devide ID or filename input
-- Small change: status screen shows load progress
+- Small change: title screen shows load progress
 
 Version v090-20220309-1618:
 - Bugfix in 'does file exist' check
