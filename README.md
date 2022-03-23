@@ -45,9 +45,9 @@ Commodore 128 80 column screen editor
 ## Version history and download
 ([Back to contents](#contents))
 
-[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v099-20220323-1128.zip)
+[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v099-20220323-1629.zip)
 
-Version v099-20220323-1128:
+Version v099-20220323-1629:
 - Major overhaul of memory management by moving many functions to memory overlays. Gives room for new functionality (as before I did not have room left)
 - Added statusbar. Is enabled by default, can be toggled to show or not by pressing F6 in every mode.
 - Statusbar autohides if you move the cursor to the lowest visible line, shows again if enabled if moving up again

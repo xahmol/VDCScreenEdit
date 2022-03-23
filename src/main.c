@@ -861,6 +861,7 @@ void cursormove(unsigned char left, unsigned char right, unsigned char up, unsig
             {
                 gotoxy(screen_col,screen_row);
                 VDC_ScrollCopy(SCREENMAPBASE,1,screenwidth,screenheight,xoffset--,yoffset,0,0,80,25,2);
+                initstatusbar();
             }
         }
         else
@@ -876,6 +877,7 @@ void cursormove(unsigned char left, unsigned char right, unsigned char up, unsig
             {
                 gotoxy(screen_col,screen_row);
                 VDC_ScrollCopy(SCREENMAPBASE,1,screenwidth,screenheight,xoffset++,yoffset,0,0,80,25,1);
+                initstatusbar();
             }
         }
         else
@@ -891,6 +893,7 @@ void cursormove(unsigned char left, unsigned char right, unsigned char up, unsig
             {
                 gotoxy(screen_col,screen_row);
                 VDC_ScrollCopy(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset--,0,0,80,25,4);
+                initstatusbar();
             }
         }
         else
@@ -908,6 +911,7 @@ void cursormove(unsigned char left, unsigned char right, unsigned char up, unsig
             {
                 gotoxy(screen_col,screen_row);
                 VDC_ScrollCopy(SCREENMAPBASE,1,screenwidth,screenheight,xoffset,yoffset++,0,0,80,25,8);
+                initstatusbar();
             }
         }
         else
