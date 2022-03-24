@@ -18,7 +18,7 @@ vdc_core.o:
 overlay1.o:
     OVERLAY1          Offs=000000  Size=001243  Align=00001  Fill=0000
 overlay2.o:
-    OVERLAY2          Offs=000000  Size=00128E  Align=00001  Fill=0000
+    OVERLAY2          Offs=000000  Size=001287  Align=00001  Fill=0000
 overlay3.o:
     OVERLAY3          Offs=000000  Size=0011E5  Align=00001  Fill=0000
 overlay4.o:
@@ -342,7 +342,7 @@ OVL7ADDR              00ABFE  00ABFF  000002  00001
 OVL8ADDR              00ABFE  00ABFF  000002  00001
 OVL9ADDR              00ABFE  00ABFF  000002  00001
 OVERLAY1              00AC00  00BE42  001243  00001
-OVERLAY2              00AC00  00BE8D  00128E  00001
+OVERLAY2              00AC00  00BE86  001287  00001
 OVERLAY3              00AC00  00BDE4  0011E5  00001
 OVERLAY4              00AC00  00BF3B  00133C  00001
 
@@ -418,116 +418,117 @@ _cursormove               00328F RLA    _exit                     001C42 RLA
 _favourites               00770C RLA    _fileerrormessage         002CEA RLA    
 _filename                 0076C9 RLA    _fwrite                   0063AF RLA    
 _getcurrentdevice         006323 RLA    _gotoxy                   00642D RLA    
-_helpscreen_load          003D15 RLA    _initstatusbar            002FBA RLA    
-_isdigit                  0064BE RLA    _islower                  0064C6 RLA    
-_isprint                  0064CE RLA    _isspace                  0064D8 RLA    
-_isupper                  0064E0 RLA    _lineandbox               00ADFF RLA    
-_loadcharset              00B8D3 RLA    _loadproject              00B641 RLA    
-_loadscreenmap            00B059 RLA    _ltoa                     006636 RLA    
-_main                     00441D RLA    _mc_mb_normal             0074A4 RLA    
-_mc_mb_select             0074A5 RLA    _mc_menupopup             0074A8 RLA    
-_mc_pd_normal             0074A6 RLA    _mc_pd_select             0074A7 RLA    
-_memcpy                   006778 RLA    _menuplacebar             002574 RLA    
-_menupulldown             0025D8 RLA    _messagepopup             002D78 RLA    
-_movemode                 00B224 RLA    _palette                  00B62B RLA    
-_palettechar              00770B RLA    _placesignature           003190 RLA    
-_plot_try                 00BD4C RLA    _plotaltchar              0076FC RLA    
-_plotblink                0076FB RLA    _plotcolor                0076F8 RLA    
-_plotmove                 003E5F RLA    _plotreverse              0076F9 RLA    
-_plotscreencode           0076F7 RLA    _plotunderline            0076FA RLA    
-_printf                   0068CF RLA    _printstatusbar           002DCB RLA    
-_programmode              0076DE RLA    _pulldownmenutitles       007313 RLA    
-_resizeheight             00BAD7 RLA    _resizewidth              00B914 RLA    
-_rowsel                   0074A9 RLA    _savecharset              00B96A RLA    
-_saveproject              00B33B RLA    _savescreenmap            00B267 RLA    
-_screen_col               0076EA RLA    _screen_row               0076EB RLA    
-_screenbackground         0076F6 RLA    _screenheight             0076F2 RLA    
-_screenmap_attraddr       0030ED RLA    _screenmap_screenaddr     0030BD RLA    
-_screenmapplot            003135 RLA    _screentotal              0076F4 RLA    
-_screenwidth              0076F0 RLA    _select_accept            007709 RLA    
-_select_endx              007701 RLA    _select_endy              007703 RLA    
-_select_height            007707 RLA    _select_startx            0076FD RLA    
-_select_starty            0076FF RLA    _select_width             007705 RLA    
-_selectmode               00B53C RLA    _set_c128_speed           006046 RLA    
-_showbar                  0076E9 RLA    _showchareditfield        003F9B RLA    
-_showchareditgrid         004030 RLA    _sprintf                  0069C9 RLA    
-_stdout                   0074DA RLA    _strlen                   006A2A RLA    
-_strlower                 006A40 RLA    _strtol                   006A67 RLA    
-_targetdevice             0076C8 RLA    _textInput                001D81 RLA    
-_textcolor                00622D RLA    _togglestatusbar          0030A0 RLA    
-_ultoa                    006677 RLA    _undo_escapeundo          003ABC RLA    
-_undo_new                 003510 RLA    _undo_performredo         003AE9 RLA    
-_undo_performundo         00376F RLA    _undo_redopossible        00757C RLA    
-_undo_undopossible        00757B RLA    _undoenabled              0074A3 RLA    
-_vdctoconiocol            0074AC RLA    _version                  007771 RLA    
-_versioninfo              00BC56 RLA    _vfprintf                 006D98 RLA    
-_videomode                006DC1 RLA    _visualmap                0074AB RLA    
-_vsprintf                 006EAE RLA    _windownew                002532 RLA    
-_windowrestore            002417 RLA    _windowsave               002300 RLA    
-_write                    006EC0 RLA    _writemode                00ACA0 RLA    
-_xoffset                  0076EC RLA    _yoffset                  0076EE RLA    
-addeq0sp                  006072 RLA    addeqysp                  006074 RLA    
-addysp                    006084 RLA    addysp1                   006083 RLA    
-aslax1                    006091 RLA    aslax2                    006099 RLA    
-aslax4                    0060B2 RLA    aslaxy                    006987 RLA    
-axlong                    0060C3 RLA    axulong                   0060C9 RLA    
-booleq                    006752 RLA    boolugt                   006771 RLA    
-callmain                  006131 RLA    ctypemask                 006305 RLA    
-ctypemaskdirect           006309 RLA    cursor                    007787 RLA    
-curunit                   007546 RLA    decax1                    006333 RLA    
-decax2                    00633A RLA    decaxy                    006341 RLA    
-decsp1                    00634A RLA    decsp2                    006353 RLA    
-decsp3                    006360 RLA    decsp4                    00636D RLA    
-decsp5                    00637A RLA    decsp6                    006387 RLA    
-decsp7                    006394 RLA    devnum                    0000BA RLZ    
-donecgetc                 00621E  LAI   donelib                   00628D RLA    
-fdtab                     00750A RLA    getlop                    0066C4 RLA    
-gotoxy                    00642A RLA    incax1                    006465 RLA    
-incax2                    00646C RLA    incax6                    006473 RLA    
-incaxy                    00647A RLA    incsp1                    006483 RLA    
-incsp2                    006492 RLA    incsp3                    0064A0 RLA    
-incsp4                    0064A5 RLA    incsp5                    0064AA RLA    
-incsp6                    0064AF RLA    incsp7                    0064B4 RLA    
-incsp8                    0064B9 RLA    initcgetc                 001C5E  LAI   
-initcurunit               001C7D  LAI   initlib                   001C71 RLA    
-initstdout                001C89  LAI   ldax0sp                   006555 RLA    
-ldaxi                     006548 RLA    ldaxysp                   006557 RLA    
-ldeaxysp                  006560 RLA    leaa0sp                   006571 RLA    
-leaaxsp                   006573 RLA    mul8x16                   0067FB RLA    
-mul8x16a                  006805 RLA    mulax10                   006833 RLA    
-mulax3                    00684C RLA    mulax7                    00685D RLA    
-mulax9                    006876 RLA    negeax                    0065DF RLA    
-plot                      0062DA RLA    popa                      0068B5 RLA    
-popax                     00648A RLA    popptr1                   0068C1 RLA    
-ptr1                      00000A RLZ    ptr2                      00000C RLZ    
-ptr3                      00000E RLZ    ptr4                      000010 RLZ    
-push0                     00691D RLA    push1                     006902 RLA    
-pusha                     00690B RLA    pusha0                    00691F RLA    
-pushax                    006921 RLA    pusheax                   006606 RLA    
-pushl0                    0065FD RLA    pushw                     006937 RLA    
-pushw0sp                  006946 RLA    pushwidx                  006939 RLA    
-pushwysp                  006948 RLA    regbank                   000016 RLZ    
-return0                   006962 RLA    rwcommon                  006966 RLA    
-shlax1                    006091 RLA    shlax2                    006099 RLA    
-shlax3                    0060A4 RLA    shlax4                    0060B2 RLA    
-shrax1                    0069B3 RLA    shrax3                    0069BB RLA    
-sp                        000002 RLZ    sreg                      000004 RLZ    
-staspidx                  0069F4 RLA    stax0sp                   006A0A RLA    
-staxysp                   006A0C RLA    steaxysp                  006A17 RLA    
-subeq0sp                  006CEF RLA    subeqysp                  006CF1 RLA    
-subysp                    006D04 RLA    tmp1                      000012 RLZ    
-tmp2                      000013 RLZ    tmp3                      000014 RLZ    
-tmp4                      000015 RLZ    tosaddax                  006058 RLA    
-tosaddeax                 0064EE RLA    toseqeax                  00657D RLA    
-tosicmp                   006439 RLA    tosicmp0                  006437 RLA    
-toslcmp                   00650D RLA    tosmula0                  0067F9 RLA    
-tosmulax                  0067B4 RLA    tosorax                   00688F RLA    
-tossubax                  006CDC RLA    tosudivax                 006D13 RLA    
-tosudiveax                0066B9 RLA    tosugteax                 00672D RLA    
-tosumodeax                006739 RLA    tosumula0                 0067F9 RLA    
-tosumulax                 0067B4 RLA    tosumuleax                006589 RLA    
-udiv32                    0066E8 RLA    vsnprintf                 006DD7 RLA    
-zerobss                   006F14 RLA    
+_helpscreen_load          003D15 RLA    _hidestatusbar            003057 RLA    
+_initstatusbar            002FBA RLA    _isdigit                  0064BE RLA    
+_islower                  0064C6 RLA    _isprint                  0064CE RLA    
+_isspace                  0064D8 RLA    _isupper                  0064E0 RLA    
+_lineandbox               00ADFF RLA    _loadcharset              00B8D3 RLA    
+_loadproject              00B641 RLA    _loadscreenmap            00B059 RLA    
+_ltoa                     006636 RLA    _main                     00441D RLA    
+_mc_mb_normal             0074A4 RLA    _mc_mb_select             0074A5 RLA    
+_mc_menupopup             0074A8 RLA    _mc_pd_normal             0074A6 RLA    
+_mc_pd_select             0074A7 RLA    _memcpy                   006778 RLA    
+_menuplacebar             002574 RLA    _menupulldown             0025D8 RLA    
+_messagepopup             002D78 RLA    _movemode                 00B224 RLA    
+_palette                  00B62B RLA    _palettechar              00770B RLA    
+_placesignature           003190 RLA    _plot_try                 00BD4C RLA    
+_plotaltchar              0076FC RLA    _plotblink                0076FB RLA    
+_plotcolor                0076F8 RLA    _plotmove                 003E5F RLA    
+_plotreverse              0076F9 RLA    _plotscreencode           0076F7 RLA    
+_plotunderline            0076FA RLA    _printf                   0068CF RLA    
+_printstatusbar           002DCB RLA    _programmode              0076DE RLA    
+_pulldownmenutitles       007313 RLA    _resizeheight             00BAD0 RLA    
+_resizewidth              00B914 RLA    _rowsel                   0074A9 RLA    
+_savecharset              00B96A RLA    _saveproject              00B33B RLA    
+_savescreenmap            00B267 RLA    _screen_col               0076EA RLA    
+_screen_row               0076EB RLA    _screenbackground         0076F6 RLA    
+_screenheight             0076F2 RLA    _screenmap_attraddr       0030ED RLA    
+_screenmap_screenaddr     0030BD RLA    _screenmapplot            003135 RLA    
+_screentotal              0076F4 RLA    _screenwidth              0076F0 RLA    
+_select_accept            007709 RLA    _select_endx              007701 RLA    
+_select_endy              007703 RLA    _select_height            007707 RLA    
+_select_startx            0076FD RLA    _select_starty            0076FF RLA    
+_select_width             007705 RLA    _selectmode               00B535 RLA    
+_set_c128_speed           006046 RLA    _showbar                  0076E9 RLA    
+_showchareditfield        003F9B RLA    _showchareditgrid         004030 RLA    
+_sprintf                  0069C9 RLA    _stdout                   0074DA RLA    
+_strlen                   006A2A RLA    _strlower                 006A40 RLA    
+_strtol                   006A67 RLA    _targetdevice             0076C8 RLA    
+_textInput                001D81 RLA    _textcolor                00622D RLA    
+_togglestatusbar          0030A0 RLA    _ultoa                    006677 RLA    
+_undo_escapeundo          003ABC RLA    _undo_new                 003510 RLA    
+_undo_performredo         003AE9 RLA    _undo_performundo         00376F RLA    
+_undo_redopossible        00757C RLA    _undo_undopossible        00757B RLA    
+_undoenabled              0074A3 RLA    _vdctoconiocol            0074AC RLA    
+_version                  007771 RLA    _versioninfo              00BC56 RLA    
+_vfprintf                 006D98 RLA    _videomode                006DC1 RLA    
+_visualmap                0074AB RLA    _vsprintf                 006EAE RLA    
+_windownew                002532 RLA    _windowrestore            002417 RLA    
+_windowsave               002300 RLA    _write                    006EC0 RLA    
+_writemode                00ACA0 RLA    _xoffset                  0076EC RLA    
+_yoffset                  0076EE RLA    addeq0sp                  006072 RLA    
+addeqysp                  006074 RLA    addysp                    006084 RLA    
+addysp1                   006083 RLA    aslax1                    006091 RLA    
+aslax2                    006099 RLA    aslax4                    0060B2 RLA    
+aslaxy                    006987 RLA    axlong                    0060C3 RLA    
+axulong                   0060C9 RLA    booleq                    006752 RLA    
+boolugt                   006771 RLA    callmain                  006131 RLA    
+ctypemask                 006305 RLA    ctypemaskdirect           006309 RLA    
+cursor                    007787 RLA    curunit                   007546 RLA    
+decax1                    006333 RLA    decax2                    00633A RLA    
+decaxy                    006341 RLA    decsp1                    00634A RLA    
+decsp2                    006353 RLA    decsp3                    006360 RLA    
+decsp4                    00636D RLA    decsp5                    00637A RLA    
+decsp6                    006387 RLA    decsp7                    006394 RLA    
+devnum                    0000BA RLZ    donecgetc                 00621E  LAI   
+donelib                   00628D RLA    fdtab                     00750A RLA    
+getlop                    0066C4 RLA    gotoxy                    00642A RLA    
+incax1                    006465 RLA    incax2                    00646C RLA    
+incax6                    006473 RLA    incaxy                    00647A RLA    
+incsp1                    006483 RLA    incsp2                    006492 RLA    
+incsp3                    0064A0 RLA    incsp4                    0064A5 RLA    
+incsp5                    0064AA RLA    incsp6                    0064AF RLA    
+incsp7                    0064B4 RLA    incsp8                    0064B9 RLA    
+initcgetc                 001C5E  LAI   initcurunit               001C7D  LAI   
+initlib                   001C71 RLA    initstdout                001C89  LAI   
+ldax0sp                   006555 RLA    ldaxi                     006548 RLA    
+ldaxysp                   006557 RLA    ldeaxysp                  006560 RLA    
+leaa0sp                   006571 RLA    leaaxsp                   006573 RLA    
+mul8x16                   0067FB RLA    mul8x16a                  006805 RLA    
+mulax10                   006833 RLA    mulax3                    00684C RLA    
+mulax7                    00685D RLA    mulax9                    006876 RLA    
+negeax                    0065DF RLA    plot                      0062DA RLA    
+popa                      0068B5 RLA    popax                     00648A RLA    
+popptr1                   0068C1 RLA    ptr1                      00000A RLZ    
+ptr2                      00000C RLZ    ptr3                      00000E RLZ    
+ptr4                      000010 RLZ    push0                     00691D RLA    
+push1                     006902 RLA    pusha                     00690B RLA    
+pusha0                    00691F RLA    pushax                    006921 RLA    
+pusheax                   006606 RLA    pushl0                    0065FD RLA    
+pushw                     006937 RLA    pushw0sp                  006946 RLA    
+pushwidx                  006939 RLA    pushwysp                  006948 RLA    
+regbank                   000016 RLZ    return0                   006962 RLA    
+rwcommon                  006966 RLA    shlax1                    006091 RLA    
+shlax2                    006099 RLA    shlax3                    0060A4 RLA    
+shlax4                    0060B2 RLA    shrax1                    0069B3 RLA    
+shrax3                    0069BB RLA    sp                        000002 RLZ    
+sreg                      000004 RLZ    staspidx                  0069F4 RLA    
+stax0sp                   006A0A RLA    staxysp                   006A0C RLA    
+steaxysp                  006A17 RLA    subeq0sp                  006CEF RLA    
+subeqysp                  006CF1 RLA    subysp                    006D04 RLA    
+tmp1                      000012 RLZ    tmp2                      000013 RLZ    
+tmp3                      000014 RLZ    tmp4                      000015 RLZ    
+tosaddax                  006058 RLA    tosaddeax                 0064EE RLA    
+toseqeax                  00657D RLA    tosicmp                   006439 RLA    
+tosicmp0                  006437 RLA    toslcmp                   00650D RLA    
+tosmula0                  0067F9 RLA    tosmulax                  0067B4 RLA    
+tosorax                   00688F RLA    tossubax                  006CDC RLA    
+tosudivax                 006D13 RLA    tosudiveax                0066B9 RLA    
+tosugteax                 00672D RLA    tosumodeax                006739 RLA    
+tosumula0                 0067F9 RLA    tosumulax                 0067B4 RLA    
+tosumuleax                006589 RLA    udiv32                    0066E8 RLA    
+vsnprintf                 006DD7 RLA    zerobss                   006F14 RLA    
+
 
 
 Exports list by value:
@@ -570,147 +571,148 @@ _windowrestore            002417 RLA    _windownew                002532 RLA
 _menuplacebar             002574 RLA    _menupulldown             0025D8 RLA    
 _areyousure               002C7C RLA    _fileerrormessage         002CEA RLA    
 _messagepopup             002D78 RLA    _printstatusbar           002DCB RLA    
-_initstatusbar            002FBA RLA    _togglestatusbar          0030A0 RLA    
-_screenmap_screenaddr     0030BD RLA    _screenmap_attraddr       0030ED RLA    
-_screenmapplot            003135 RLA    _placesignature           003190 RLA    
-_cursormove               00328F RLA    _undo_new                 003510 RLA    
-_undo_performundo         00376F RLA    _undo_escapeundo          003ABC RLA    
-_undo_performredo         003AE9 RLA    _helpscreen_load          003D15 RLA    
-_plotmove                 003E5F RLA    _change_plotcolor         003F52 RLA    
-_showchareditfield        003F9B RLA    _charaddress              003FE6 RLA    
-_showchareditgrid         004030 RLA    _main                     00441D RLA    
-_VDC_DetectVDCMemSize     004F1D RLA    _VDC_Poke                 004F26 RLA    
-_VDC_Peek                 004F43 RLA    _VDC_HChar                004F93 RLA    
-_VDC_VChar                004FD2 RLA    _VDC_CopyMemToVDC         00500E RLA    
-_VDC_CopyVDCToMem         005058 RLA    _VDC_RedefineCharset      0050A1 RLA    
-_VDC_FillArea             0050D9 RLA    _VDC_Init                 00511F RLA    
-_VDC_Exit                 0051D6 RLA    _VDC_PetsciiToScreenCode  0051F0 RLA    
-_VDC_PetsciiToScreenCodeRvs 005292 RLA    _VDC_BackColor            00537E RLA    
-_VDC_PrintAt              0053A9 RLA    _VDC_LoadCharset          00542D RLA    
-_VDC_LoadScreen           0054C6 RLA    _VDC_Attribute            005567 RLA    
-_VDC_Plot                 0055C0 RLA    _VDC_CopyViewPortToVDC    005646 RLA    
-_VDC_ScrollCopy           005742 RLA    _VDC_ScrollMove           0059C6 RLA    
-_SetLoadSaveBank          005B94 RLA    _POKEB                    005BA4 RLA    
-_PEEKB                    005BCB RLA    _BankMemCopy              005BF2 RLA    
-_BankMemSet               005C41 RLA    __directerrno             005C7E RLA    
-__mappederrno             005C88 RLA    __printf                  005D8B RLA    
-__seterrno                00603D RLA    _set_c128_speed           006046 RLA    
-tosaddax                  006058 RLA    addeq0sp                  006072 RLA    
-addeqysp                  006074 RLA    addysp1                   006083 RLA    
-addysp                    006084 RLA    aslax1                    006091 RLA    
-shlax1                    006091 RLA    aslax2                    006099 RLA    
-shlax2                    006099 RLA    shlax3                    0060A4 RLA    
-aslax4                    0060B2 RLA    shlax4                    0060B2 RLA    
-axlong                    0060C3 RLA    axulong                   0060C9 RLA    
-_cbm_close                0060D0 REA    _cbm_k_close              0060D0 RLA    
-_cbm_k_load               0060D4 RLA    _cbm_k_open               0060F1 RLA    
-_cbm_k_save               0060FA RLA    _cbm_k_setlfs             006110 RLA    
-_cbm_k_setnam             00611E RLA    callmain                  006131 RLA    
-_cbm_load                 006148 RLA    _cbm_open                 00618C RLA    
-_cbm_read                 0061A2 RLA    _cgetc                    0061FD RLA    
-donecgetc                 00621E  LAI   _textcolor                00622D RLA    
-_bgcolor                  006256 RLA    _bordercolor              00627C RLA    
-donelib                   00628D RLA    _cputc                    00629E RLA    
-plot                      0062DA RLA    _cputs                    0062EC RLA    
-ctypemask                 006305 RLA    ctypemaskdirect           006309 RLA    
-_getcurrentdevice         006323 RLA    _cursor                   006329 RLA    
-decax1                    006333 RLA    decax2                    00633A RLA    
-decaxy                    006341 RLA    decsp1                    00634A RLA    
-decsp2                    006353 RLA    decsp3                    006360 RLA    
-decsp4                    00636D RLA    decsp5                    00637A RLA    
-decsp6                    006387 RLA    decsp7                    006394 RLA    
-_fwrite                   0063AF RLA    gotoxy                    00642A RLA    
-_gotoxy                   00642D RLA    tosicmp0                  006437 RLA    
-tosicmp                   006439 RLA    incax1                    006465 RLA    
-incax2                    00646C RLA    incax6                    006473 RLA    
-incaxy                    00647A RLA    incsp1                    006483 RLA    
-popax                     00648A RLA    incsp2                    006492 RLA    
-incsp3                    0064A0 RLA    incsp4                    0064A5 RLA    
-incsp5                    0064AA RLA    incsp6                    0064AF RLA    
-incsp7                    0064B4 RLA    incsp8                    0064B9 RLA    
-_isdigit                  0064BE RLA    _islower                  0064C6 RLA    
-_isprint                  0064CE RLA    _isspace                  0064D8 RLA    
-_isupper                  0064E0 RLA    tosaddeax                 0064EE RLA    
-toslcmp                   00650D RLA    ldaxi                     006548 RLA    
-ldax0sp                   006555 RLA    ldaxysp                   006557 RLA    
-ldeaxysp                  006560 RLA    leaa0sp                   006571 RLA    
-leaaxsp                   006573 RLA    toseqeax                  00657D RLA    
-tosumuleax                006589 RLA    negeax                    0065DF RLA    
-pushl0                    0065FD RLA    pusheax                   006606 RLA    
-_ltoa                     006636 RLA    _ultoa                    006677 RLA    
-tosudiveax                0066B9 RLA    getlop                    0066C4 RLA    
-udiv32                    0066E8 RLA    tosugteax                 00672D RLA    
-tosumodeax                006739 RLA    booleq                    006752 RLA    
-boolugt                   006771 RLA    _memcpy                   006778 RLA    
-tosmulax                  0067B4 RLA    tosumulax                 0067B4 RLA    
-tosmula0                  0067F9 RLA    tosumula0                 0067F9 RLA    
-mul8x16                   0067FB RLA    mul8x16a                  006805 RLA    
-mulax10                   006833 RLA    mulax3                    00684C RLA    
-mulax7                    00685D RLA    mulax9                    006876 RLA    
-tosorax                   00688F RLA    __osmaperrno              00689F RLA    
-popa                      0068B5 RLA    popptr1                   0068C1 RLA    
-_printf                   0068CF RLA    push1                     006902 RLA    
-pusha                     00690B RLA    push0                     00691D RLA    
-pusha0                    00691F RLA    pushax                    006921 RLA    
-pushw                     006937 RLA    pushwidx                  006939 RLA    
-pushw0sp                  006946 RLA    pushwysp                  006948 RLA    
-return0                   006962 RLA    rwcommon                  006966 RLA    
-aslaxy                    006987 RLA    shrax1                    0069B3 RLA    
-shrax3                    0069BB RLA    _sprintf                  0069C9 RLA    
-staspidx                  0069F4 RLA    stax0sp                   006A0A RLA    
-staxysp                   006A0C RLA    steaxysp                  006A17 RLA    
-_strlen                   006A2A RLA    _strlower                 006A40 RLA    
-_strtol                   006A67 RLA    tossubax                  006CDC RLA    
-subeq0sp                  006CEF RLA    subeqysp                  006CF1 RLA    
-subysp                    006D04 RLA    tosudivax                 006D13 RLA    
-_vfprintf                 006D98 RLA    _videomode                006DC1 RLA    
-vsnprintf                 006DD7 RLA    _vsprintf                 006EAE RLA    
-_write                    006EC0 RLA    zerobss                   006F14 RLA    
-__hextab                  0071D1 RLA    __longminstr              0071E1 RLA    
-__ctype                   0071ED RLA    __ctypeidx                0071F8 RLA    
-__DESTRUCTOR_TABLE__      0072D2 RLA    _pulldownmenutitles       007313 RLA    
-_undoenabled              0074A3 RLA    _mc_mb_normal             0074A4 RLA    
-_mc_mb_select             0074A5 RLA    _mc_pd_normal             0074A6 RLA    
-_mc_pd_select             0074A7 RLA    _mc_menupopup             0074A8 RLA    
-_rowsel                   0074A9 RLA    _colsel                   0074AA RLA    
-_visualmap                0074AB RLA    _vdctoconiocol            0074AC RLA    
-_stdout                   0074DA RLA    fdtab                     00750A RLA    
-curunit                   007546 RLA    __BSS_RUN__               007547 RLA    
-_undo_undopossible        00757B RLA    _undo_redopossible        00757C RLA    
-_bootdevice               00769C RLA    _charsetchanged           0076C5 RLA    
-_targetdevice             0076C8 RLA    _filename                 0076C9 RLA    
-_programmode              0076DE RLA    _showbar                  0076E9 RLA    
-_screen_col               0076EA RLA    _screen_row               0076EB RLA    
-_xoffset                  0076EC RLA    _yoffset                  0076EE RLA    
-_screenwidth              0076F0 RLA    _screenheight             0076F2 RLA    
-_screentotal              0076F4 RLA    _screenbackground         0076F6 RLA    
-_plotscreencode           0076F7 RLA    _plotcolor                0076F8 RLA    
-_plotreverse              0076F9 RLA    _plotunderline            0076FA RLA    
-_plotblink                0076FB RLA    _plotaltchar              0076FC RLA    
-_select_startx            0076FD RLA    _select_starty            0076FF RLA    
-_select_endx              007701 RLA    _select_endy              007703 RLA    
-_select_width             007705 RLA    _select_height            007707 RLA    
-_select_accept            007709 RLA    _palettechar              00770B RLA    
-_favourites               00770C RLA    _buffer                   007720 RLA    
-_version                  007771 RLA    cursor                    007787 RLA    
-__oserror                 007788 RLA    __errno                   0077B6 RLA    
-__MAIN_SIZE__             009BF3 REA    _chareditor               00AC12 RLA    
-_writemode                00ACA0 RLA    _lineandbox               00ADFF RLA    
-_loadscreenmap            00B059 RLA    _colorwrite               00B0A7 RLA    
-_movemode                 00B224 RLA    _savescreenmap            00B267 RLA    
-_saveproject              00B33B RLA    _selectmode               00B53C RLA    
-_palette                  00B62B RLA    _loadproject              00B641 RLA    
-_loadcharset              00B8D3 RLA    _resizewidth              00B914 RLA    
-_savecharset              00B96A RLA    _changebackgroundcolor    00BA2D RLA    
-_resizeheight             00BAD7 RLA    _versioninfo              00BC56 RLA    
-_plot_try                 00BD4C RLA    _clrscr                   00C142 REA    
-SWAPPER                   00FF5F RLA    READST                    00FFB7 RLA    
-SETLFS                    00FFBA RLA    SETNAM                    00FFBD RLA    
-OPEN                      00FFC0 RLA    CLOSE                     00FFC3 RLA    
-CHKIN                     00FFC6 RLA    CKOUT                     00FFC9 RLA    
-CLRCH                     00FFCC RLA    BASIN                     00FFCF RLA    
-BSOUT                     00FFD2 RLA    LOAD                      00FFD5 RLA    
-SAVE                      00FFD8 RLA    
+_initstatusbar            002FBA RLA    _hidestatusbar            003057 RLA    
+_togglestatusbar          0030A0 RLA    _screenmap_screenaddr     0030BD RLA    
+_screenmap_attraddr       0030ED RLA    _screenmapplot            003135 RLA    
+_placesignature           003190 RLA    _cursormove               00328F RLA    
+_undo_new                 003510 RLA    _undo_performundo         00376F RLA    
+_undo_escapeundo          003ABC RLA    _undo_performredo         003AE9 RLA    
+_helpscreen_load          003D15 RLA    _plotmove                 003E5F RLA    
+_change_plotcolor         003F52 RLA    _showchareditfield        003F9B RLA    
+_charaddress              003FE6 RLA    _showchareditgrid         004030 RLA    
+_main                     00441D RLA    _VDC_DetectVDCMemSize     004F1D RLA    
+_VDC_Poke                 004F26 RLA    _VDC_Peek                 004F43 RLA    
+_VDC_HChar                004F93 RLA    _VDC_VChar                004FD2 RLA    
+_VDC_CopyMemToVDC         00500E RLA    _VDC_CopyVDCToMem         005058 RLA    
+_VDC_RedefineCharset      0050A1 RLA    _VDC_FillArea             0050D9 RLA    
+_VDC_Init                 00511F RLA    _VDC_Exit                 0051D6 RLA    
+_VDC_PetsciiToScreenCode  0051F0 RLA    _VDC_PetsciiToScreenCodeRvs 005292 RLA    
+_VDC_BackColor            00537E RLA    _VDC_PrintAt              0053A9 RLA    
+_VDC_LoadCharset          00542D RLA    _VDC_LoadScreen           0054C6 RLA    
+_VDC_Attribute            005567 RLA    _VDC_Plot                 0055C0 RLA    
+_VDC_CopyViewPortToVDC    005646 RLA    _VDC_ScrollCopy           005742 RLA    
+_VDC_ScrollMove           0059C6 RLA    _SetLoadSaveBank          005B94 RLA    
+_POKEB                    005BA4 RLA    _PEEKB                    005BCB RLA    
+_BankMemCopy              005BF2 RLA    _BankMemSet               005C41 RLA    
+__directerrno             005C7E RLA    __mappederrno             005C88 RLA    
+__printf                  005D8B RLA    __seterrno                00603D RLA    
+_set_c128_speed           006046 RLA    tosaddax                  006058 RLA    
+addeq0sp                  006072 RLA    addeqysp                  006074 RLA    
+addysp1                   006083 RLA    addysp                    006084 RLA    
+aslax1                    006091 RLA    shlax1                    006091 RLA    
+aslax2                    006099 RLA    shlax2                    006099 RLA    
+shlax3                    0060A4 RLA    aslax4                    0060B2 RLA    
+shlax4                    0060B2 RLA    axlong                    0060C3 RLA    
+axulong                   0060C9 RLA    _cbm_close                0060D0 REA    
+_cbm_k_close              0060D0 RLA    _cbm_k_load               0060D4 RLA    
+_cbm_k_open               0060F1 RLA    _cbm_k_save               0060FA RLA    
+_cbm_k_setlfs             006110 RLA    _cbm_k_setnam             00611E RLA    
+callmain                  006131 RLA    _cbm_load                 006148 RLA    
+_cbm_open                 00618C RLA    _cbm_read                 0061A2 RLA    
+_cgetc                    0061FD RLA    donecgetc                 00621E  LAI   
+_textcolor                00622D RLA    _bgcolor                  006256 RLA    
+_bordercolor              00627C RLA    donelib                   00628D RLA    
+_cputc                    00629E RLA    plot                      0062DA RLA    
+_cputs                    0062EC RLA    ctypemask                 006305 RLA    
+ctypemaskdirect           006309 RLA    _getcurrentdevice         006323 RLA    
+_cursor                   006329 RLA    decax1                    006333 RLA    
+decax2                    00633A RLA    decaxy                    006341 RLA    
+decsp1                    00634A RLA    decsp2                    006353 RLA    
+decsp3                    006360 RLA    decsp4                    00636D RLA    
+decsp5                    00637A RLA    decsp6                    006387 RLA    
+decsp7                    006394 RLA    _fwrite                   0063AF RLA    
+gotoxy                    00642A RLA    _gotoxy                   00642D RLA    
+tosicmp0                  006437 RLA    tosicmp                   006439 RLA    
+incax1                    006465 RLA    incax2                    00646C RLA    
+incax6                    006473 RLA    incaxy                    00647A RLA    
+incsp1                    006483 RLA    popax                     00648A RLA    
+incsp2                    006492 RLA    incsp3                    0064A0 RLA    
+incsp4                    0064A5 RLA    incsp5                    0064AA RLA    
+incsp6                    0064AF RLA    incsp7                    0064B4 RLA    
+incsp8                    0064B9 RLA    _isdigit                  0064BE RLA    
+_islower                  0064C6 RLA    _isprint                  0064CE RLA    
+_isspace                  0064D8 RLA    _isupper                  0064E0 RLA    
+tosaddeax                 0064EE RLA    toslcmp                   00650D RLA    
+ldaxi                     006548 RLA    ldax0sp                   006555 RLA    
+ldaxysp                   006557 RLA    ldeaxysp                  006560 RLA    
+leaa0sp                   006571 RLA    leaaxsp                   006573 RLA    
+toseqeax                  00657D RLA    tosumuleax                006589 RLA    
+negeax                    0065DF RLA    pushl0                    0065FD RLA    
+pusheax                   006606 RLA    _ltoa                     006636 RLA    
+_ultoa                    006677 RLA    tosudiveax                0066B9 RLA    
+getlop                    0066C4 RLA    udiv32                    0066E8 RLA    
+tosugteax                 00672D RLA    tosumodeax                006739 RLA    
+booleq                    006752 RLA    boolugt                   006771 RLA    
+_memcpy                   006778 RLA    tosmulax                  0067B4 RLA    
+tosumulax                 0067B4 RLA    tosmula0                  0067F9 RLA    
+tosumula0                 0067F9 RLA    mul8x16                   0067FB RLA    
+mul8x16a                  006805 RLA    mulax10                   006833 RLA    
+mulax3                    00684C RLA    mulax7                    00685D RLA    
+mulax9                    006876 RLA    tosorax                   00688F RLA    
+__osmaperrno              00689F RLA    popa                      0068B5 RLA    
+popptr1                   0068C1 RLA    _printf                   0068CF RLA    
+push1                     006902 RLA    pusha                     00690B RLA    
+push0                     00691D RLA    pusha0                    00691F RLA    
+pushax                    006921 RLA    pushw                     006937 RLA    
+pushwidx                  006939 RLA    pushw0sp                  006946 RLA    
+pushwysp                  006948 RLA    return0                   006962 RLA    
+rwcommon                  006966 RLA    aslaxy                    006987 RLA    
+shrax1                    0069B3 RLA    shrax3                    0069BB RLA    
+_sprintf                  0069C9 RLA    staspidx                  0069F4 RLA    
+stax0sp                   006A0A RLA    staxysp                   006A0C RLA    
+steaxysp                  006A17 RLA    _strlen                   006A2A RLA    
+_strlower                 006A40 RLA    _strtol                   006A67 RLA    
+tossubax                  006CDC RLA    subeq0sp                  006CEF RLA    
+subeqysp                  006CF1 RLA    subysp                    006D04 RLA    
+tosudivax                 006D13 RLA    _vfprintf                 006D98 RLA    
+_videomode                006DC1 RLA    vsnprintf                 006DD7 RLA    
+_vsprintf                 006EAE RLA    _write                    006EC0 RLA    
+zerobss                   006F14 RLA    __hextab                  0071D1 RLA    
+__longminstr              0071E1 RLA    __ctype                   0071ED RLA    
+__ctypeidx                0071F8 RLA    __DESTRUCTOR_TABLE__      0072D2 RLA    
+_pulldownmenutitles       007313 RLA    _undoenabled              0074A3 RLA    
+_mc_mb_normal             0074A4 RLA    _mc_mb_select             0074A5 RLA    
+_mc_pd_normal             0074A6 RLA    _mc_pd_select             0074A7 RLA    
+_mc_menupopup             0074A8 RLA    _rowsel                   0074A9 RLA    
+_colsel                   0074AA RLA    _visualmap                0074AB RLA    
+_vdctoconiocol            0074AC RLA    _stdout                   0074DA RLA    
+fdtab                     00750A RLA    curunit                   007546 RLA    
+__BSS_RUN__               007547 RLA    _undo_undopossible        00757B RLA    
+_undo_redopossible        00757C RLA    _bootdevice               00769C RLA    
+_charsetchanged           0076C5 RLA    _targetdevice             0076C8 RLA    
+_filename                 0076C9 RLA    _programmode              0076DE RLA    
+_showbar                  0076E9 RLA    _screen_col               0076EA RLA    
+_screen_row               0076EB RLA    _xoffset                  0076EC RLA    
+_yoffset                  0076EE RLA    _screenwidth              0076F0 RLA    
+_screenheight             0076F2 RLA    _screentotal              0076F4 RLA    
+_screenbackground         0076F6 RLA    _plotscreencode           0076F7 RLA    
+_plotcolor                0076F8 RLA    _plotreverse              0076F9 RLA    
+_plotunderline            0076FA RLA    _plotblink                0076FB RLA    
+_plotaltchar              0076FC RLA    _select_startx            0076FD RLA    
+_select_starty            0076FF RLA    _select_endx              007701 RLA    
+_select_endy              007703 RLA    _select_width             007705 RLA    
+_select_height            007707 RLA    _select_accept            007709 RLA    
+_palettechar              00770B RLA    _favourites               00770C RLA    
+_buffer                   007720 RLA    _version                  007771 RLA    
+cursor                    007787 RLA    __oserror                 007788 RLA    
+__errno                   0077B6 RLA    __MAIN_SIZE__             009BF3 REA    
+_chareditor               00AC12 RLA    _writemode                00ACA0 RLA    
+_lineandbox               00ADFF RLA    _loadscreenmap            00B059 RLA    
+_colorwrite               00B0A7 RLA    _movemode                 00B224 RLA    
+_savescreenmap            00B267 RLA    _saveproject              00B33B RLA    
+_selectmode               00B535 RLA    _palette                  00B62B RLA    
+_loadproject              00B641 RLA    _loadcharset              00B8D3 RLA    
+_resizewidth              00B914 RLA    _savecharset              00B96A RLA    
+_changebackgroundcolor    00BA2D RLA    _resizeheight             00BAD0 RLA    
+_versioninfo              00BC56 RLA    _plot_try                 00BD4C RLA    
+_clrscr                   00C142 REA    SWAPPER                   00FF5F RLA    
+READST                    00FFB7 RLA    SETLFS                    00FFBA RLA    
+SETNAM                    00FFBD RLA    OPEN                      00FFC0 RLA    
+CLOSE                     00FFC3 RLA    CHKIN                     00FFC6 RLA    
+CKOUT                     00FFC9 RLA    CLRCH                     00FFCC RLA    
+BASIN                     00FFCF RLA    BSOUT                     00FFD2 RLA    
+LOAD                      00FFD5 RLA    SAVE                      00FFD8 RLA    
+
 
 
 Imports list:
@@ -1106,6 +1108,8 @@ _helpscreen_load (main.o):
     overlay4.o                src/overlay4.s:44
     overlay2.o                src/overlay2.s:71
     overlay1.o                src/overlay1.s:72
+_hidestatusbar (main.o):
+    overlay2.o                src/overlay2.s:75
 _initstatusbar (main.o):
     overlay3.o                src/overlay3.s:71
     overlay2.o                src/overlay2.s:74
@@ -1322,7 +1326,7 @@ _textcolor (color.o):
     main.o                    src/main.s:31
 _togglestatusbar (main.o):
     overlay4.o                src/overlay4.s:46
-    overlay2.o                src/overlay2.s:75
+    overlay2.o                src/overlay2.s:76
     overlay1.o                src/overlay1.s:77
 _ultoa (ltoa.o):
     _printf.o                 common/_printf.s:12
@@ -1418,7 +1422,7 @@ addysp (addysp.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     vdc_core.o                src/vdc_core.s:2155
     vdc_core.o                src/vdc_core.s:2155
@@ -1481,7 +1485,7 @@ curunit (filevars.o):
     curdevice.o               cbm/curdevice.s:8
 decax1 (decax1.o):
     overlay4.o                src/overlay4.s:2415
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     main.o                    src/main.s:6406
     main.o                    src/main.s:6406
@@ -1524,7 +1528,7 @@ decsp2 (decsp2.o):
     overlay4.o                src/overlay4.s:2415
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
@@ -1536,8 +1540,8 @@ decsp2 (decsp2.o):
     main.o                    src/main.s:6406
     main.o                    src/main.s:6406
 decsp3 (decsp3.o):
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
     vdc_core.o                src/vdc_core.s:2155
 decsp4 (decsp4.o):
     lpush.o                   runtime/lpush.s:12
@@ -1549,7 +1553,7 @@ decsp4 (decsp4.o):
 decsp5 (decsp5.o):
     overlay4.o                src/overlay4.s:2415
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     main.o                    src/main.s:6406
     main.o                    src/main.s:6406
 decsp6 (decsp6.o):
@@ -1573,7 +1577,7 @@ gotoxy (gotoxy.o):
 incax1 (incax1.o):
     strtol.o                  ../libwrk/c128/strtol.s:320
     overlay4.o                src/overlay4.s:2415
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
@@ -1596,8 +1600,8 @@ incaxy (incaxy.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
@@ -1639,8 +1643,8 @@ incsp2 (incsp2.o):
     main.o                    src/main.s:6406
 incsp3 (incsp3.o):
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     vdc_core.o                src/vdc_core.s:2155
     vdc_core.o                src/vdc_core.s:2155
@@ -1650,7 +1654,7 @@ incsp3 (incsp3.o):
 incsp4 (incsp4.o):
     lcmp.o                    runtime/lcmp.s:9
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     vdc_core.o                src/vdc_core.s:2155
     vdc_core.o                src/vdc_core.s:2155
     main.o                    src/main.s:6406
@@ -1662,7 +1666,7 @@ incsp4 (incsp4.o):
     main.o                    src/main.s:6406
 incsp5 (incsp5.o):
     cbm_load.o                ../libwrk/c128/cbm_load.s:61
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     vdc_core.o                src/vdc_core.s:2155
     main.o                    src/main.s:6406
     main.o                    src/main.s:6406
@@ -1717,7 +1721,7 @@ ldaxysp (ldaxsp.o):
     strtol.o                  ../libwrk/c128/strtol.s:320
     cbm_load.o                ../libwrk/c128/cbm_load.s:61
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
     vdc_core.o                src/vdc_core.s:2155
@@ -1741,7 +1745,7 @@ leaa0sp (leaaxsp.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     main.o                    src/main.s:6406
 leaaxsp (leaaxsp.o):
@@ -1879,11 +1883,11 @@ pusha (pusha.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
@@ -1954,10 +1958,10 @@ pusha0 (pushax.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     vdc_core.o                src/vdc_core.s:2155
     vdc_core.o                src/vdc_core.s:2155
@@ -2002,11 +2006,11 @@ pushax (pushax.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
     overlay1.o                src/overlay1.s:2053
@@ -2100,7 +2104,7 @@ shlax1 (aslax1.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     vdc_core.o                src/vdc_core.s:2155
 shlax2 (aslax2.o):
@@ -2215,7 +2219,7 @@ staxysp (staxsp.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     vdc_core.o                src/vdc_core.s:2155
     vdc_core.o                src/vdc_core.s:2155
@@ -2287,9 +2291,9 @@ toseqeax (leq.o):
     strtol.o                  ../libwrk/c128/strtol.s:320
 tosicmp (icmp.o):
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     main.o                    src/main.s:6406
     main.o                    src/main.s:6406
@@ -2320,7 +2324,7 @@ tosugteax (lugt.o):
 tosumodeax (lumod.o):
     strtol.o                  ../libwrk/c128/strtol.s:320
 tosumula0 (mul8.o):
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     vdc_core.o                src/vdc_core.s:2155
     vdc_core.o                src/vdc_core.s:2155
     vdc_core.o                src/vdc_core.s:2155
@@ -2335,7 +2339,7 @@ tosumulax (mul.o):
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
     overlay3.o                src/overlay3.s:1955
-    overlay2.o                src/overlay2.s:2002
+    overlay2.o                src/overlay2.s:1999
     overlay1.o                src/overlay1.s:2053
     vdc_core.o                src/vdc_core.s:2155
     main.o                    src/main.s:6406

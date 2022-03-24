@@ -211,12 +211,13 @@ void movemode()
 
     cursor(0);
     VDC_Plot(screen_row,screen_col,PEEKB(screenmap_screenaddr(yoffset+screen_row,xoffset+screen_col,screenwidth),1),PEEKB(screenmap_attraddr(yoffset+screen_row,xoffset+screen_col,screenwidth,screenheight),1));
+    
 
     if(undoenabled == 1) { undo_new(0,0,80,25); }
+    if(showbar) { hidestatusbar(); }
 
     do
     {
-        if(showbar) { printstatusbar(); }
         key = cgetc();
 
         switch (key)
@@ -243,11 +244,6 @@ void movemode()
             VDC_ScrollMove(0,0,80,25,4);
             VDC_HChar(0,0,CH_SPACE,80,VDC_WHITE);
             moved=1;
-            break;
-        
-        // Toggle statusbar
-        case CH_F6:
-            togglestatusbar();
             break;
 
         case CH_F8:
@@ -280,6 +276,7 @@ void movemode()
     cursor(1);
     VDC_Plot(screen_row,screen_col,plotscreencode,VDC_Attribute(plotcolor, plotblink, plotunderline, plotreverse, plotaltchar));
     strcpy(programmode,"Main");
+    if(showbar) { printstatusbar(); }
 }
 
 void selectmode()

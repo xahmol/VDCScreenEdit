@@ -45,9 +45,9 @@ Commodore 128 80 column screen editor
 ## Version history and download
 ([Back to contents](#contents))
 
-[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v099-20220323-1629.zip)
+[Link to latest build](https://github.com/xahmol/VDCScreenEdit/raw/main/vdcscreenedit-v099-20220324-1527.zip)
 
-Version v099-20220323-1629:
+Version v099-20220324-1527:
 - Major overhaul of memory management by moving many functions to memory overlays. Gives room for new functionality (as before I did not have room left)
 - Added statusbar. Is enabled by default, can be toggled to show or not by pressing F6 in every mode.
 - Statusbar autohides if you move the cursor to the lowest visible line, shows again if enabled if moving up again
@@ -81,6 +81,12 @@ Version 090-20220103-1000:
 
 Version 090-20210922-2251:
 - First released beta version
+
+## Known issues and bugs
+
+[Crash on save screen after being idle for half an hour in VICE](https://github.com/xahmol/VDCScreenEdit/issues/14)
+
+Advice because of this bug is that if you use VICE instead of original hardware to run VDCSE to save your work often, at least every 15 minutes (which might be a good advice on other platforms as well).
 
 ## Introduction
 ([Back to contents](#contents))
@@ -162,7 +168,7 @@ Press these keys in main mode for editing:
 |**M**|Go to '**M**ove mode'
 |**S**|Go to '**S**elect mode'
 |**P**|Go to '**P**alette mode'
-|**T**|Try mode
+|**T**|**T**ry mode
 |**Z**|Undo
 |**Y**|Redo
 |**I**|Toggle '**I**nverse': toggle increase/decrease screencode by 128
