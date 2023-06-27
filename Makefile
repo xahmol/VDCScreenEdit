@@ -24,7 +24,7 @@ D81 = vdcse.d81
 README = README.pdf
 
 # Hostname of Ultimate II+ target for deployment. Edit for proper IP and usb number
-ULTHOST = ftp://192.168.1.19/usb1/dev/
+ULTHOST = ftp://192.168.1.19/usb1/C128Utils/VDCSE/
 ULTHOST2 = ftp://192.168.1.31/usb1/dev/
 
 MAIN = vdcse.prg

@@ -77,7 +77,7 @@ int chooseidandfilename(char* headertext, unsigned char maxlen)
     // Input: Headertext to print, maximum length of filename input string
 
     unsigned char newtargetdevice;
-    unsigned char valid = 0;
+    int valid = 0;
     char* ptrend;
 
     windownew(20,5,12,40,0);
@@ -122,6 +122,11 @@ unsigned char checkiffileexists(char* filetocheck, unsigned char id)
         else
         {
             proceed = 2;
+        }
+    } else {
+        if(error) {
+            fileerrormessage(error,0);
+            proceed = 0;
         }
     }
 
