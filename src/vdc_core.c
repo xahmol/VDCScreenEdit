@@ -246,6 +246,7 @@ void VDC_Init(void)
 		}
 	}
 	else{
+		cbm_close(2);
 		printf("Machine code file opening error.\n");
 		exit(1);
 	}

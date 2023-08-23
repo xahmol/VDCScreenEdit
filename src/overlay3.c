@@ -124,7 +124,7 @@ unsigned char checkiffileexists(char* filetocheck, unsigned char id)
             proceed = 2;
         }
     } else {
-        if(error) {
+        if(error && error != 62) {
             fileerrormessage(error,0);
             proceed = 0;
         }
@@ -243,7 +243,7 @@ void saveproject()
 
     sprintf(tempfilename,"%s.proj",filename);
 
-    overwrite = checkiffileexists(filename,targetdevice);
+    overwrite = checkiffileexists(tempfilename,targetdevice);
 
     if(overwrite)
     {

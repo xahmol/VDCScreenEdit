@@ -166,6 +166,7 @@ unsigned char dosCommand(const unsigned char lfn, const unsigned char drive, con
     int res;
     if (cbm_open(lfn, drive, sec_addr, cmd) != 0)
     {
+        cbm_close(lfn);
         return _oserror;
     }
 
@@ -174,6 +175,7 @@ unsigned char dosCommand(const unsigned char lfn, const unsigned char drive, con
         if (cbm_open(15, drive, 15, "") != 0)
         {
             cbm_close(lfn);
+            cbm_close(15);
             return _oserror;
         }
     }
